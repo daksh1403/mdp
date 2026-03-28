@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 PaintDrone — Autonomous Wall Painting System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RESET & ROOT VARIABLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12131a;
+  --bg-card: #1a1b26;
+  --bg-elevated: #24253a;
+  --accent-primary: #6366f1;
+  --accent-secondary: #8b5cf6;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --success: #10b981;
+  --success-glow: rgba(16, 185, 129, 0.4);
+  --warning: #f59e0b;
+  --warning-glow: rgba(245, 158, 11, 0.4);
+  --danger: #ef4444;
+  --danger-glow: rgba(239, 68, 68, 0.4);
+  --info: #3b82f6;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: rgba(255,255,255,0.08);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(150px);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow-1 { background: var(--accent-primary); top: -200px; left: -200px; }
+.bg-glow-2 { background: var(--accent-secondary); bottom: -200px; right: -200px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.app-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: rgba(18, 19, 26, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--accent-gradient);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.logo-text h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-text span {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Status badges in header */
+.status-badges {
+  display: flex;
+  gap: 14px;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.badge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger-glow);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.badge.connected .badge-dot {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success-glow);
+}
+
+.badge.spraying .badge-dot {
+  background: var(--warning);
+  box-shadow: 0 0 10px var(--warning-glow);
+  animation: blink 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Main grid layout */
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 28px;
+  padding: 28px;
+  max-width: 1500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .main-content { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(36, 37, 58, 0.3);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card-title-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.card-body {
+  padding: 22px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CAMERA VIEW
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.view-container {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+#camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#grid-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+#captured-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+/* Overlay status */
+.view-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overlay-tag {
+  padding: 6px 14px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.overlay-tag.live { border-left: 3px solid var(--danger); }
+.overlay-tag.captured { border-left: 3px solid var(--info); }
+
+/* View toggle buttons */
+.view-toggle {
+  display: flex;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.toggle-btn {
+  padding: 10px 18px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: var(--accent-primary);
+  color: white;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+}
+
+.toggle-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONTROL PANEL (RIGHT SIDEBAR)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.stat-box {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 6px;
+}
+
+/* Buttons */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+  box-shadow: 0 4px 15px var(--success-glow);
+}
+
+.btn-success:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 4px 15px var(--danger-glow);
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: #1a1a1a;
+  box-shadow: 0 4px 15px var(--warning-glow);
+}
+
+.btn-warning:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* Button groups */
+.btn-group {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+/* Spray controls section */
+.spray-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.spray-mode-selector {
+  display: flex;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 6px;
+}
+
+.spray-mode-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.spray-mode-btn.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.spray-mode-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* Duration input */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.input-field {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--accent-primary);
+}
+
+.input-suffix {
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* Progress bar */
+.progress-container {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  border: 1px solid var(--border-color);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.progress-percent {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--accent-primary);
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 100px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Console/Log */
+.console {
+  background: #0d0d12;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.console-header {
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.console-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.console-body {
+  padding: 12px 16px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  display: flex;
+  gap: 10px;
+}
+
+.log-time {
+  color: var(--text-muted);
+}
+
+.log-msg { color: var(--text-secondary); }
+.log-msg.success { color: var(--success); }
+.log-msg.error { color: var(--danger); }
+.log-msg.warning { color: var(--warning); }
+.log-msg.info { color: var(--info); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MISSION PANEL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.mission-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mission-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.mission-step.active {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.mission-step.completed {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+}
+
+.mission-step.active .step-number {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+  color: white;
+}
+
+.mission-step.completed .step-number {
+  border-color: var(--success);
+  background: var(--success);
+  color: white;
+}
+
+.step-info {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.step-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.footer {
+  padding: 16px 32px;
+  background: rgba(18, 19, 26, 0.8);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card { animation: fadeIn 0.4s ease forwards; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes spray-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--warning-glow); }
+  50% { box-shadow: 0 0 0 20px transparent; }
+}
+
+.spraying { animation: spray-pulse 1s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<!-- Animated Background -->
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🎨</div>
+      <div class="logo-text">
+        <h1>PaintDrone</h1>
+        <span>VIT Chennai MDP</span>
+      </div>
+    </div>
+    <div class="status-badges">
+      <div class="badge" id="esp-status">
+        <div class="badge-dot"></div>
+        <span>ESP32-CAM</span>
+      </div>
+      <div class="badge" id="drone-status">
+        <div class="badge-dot"></div>
+        <span>Pixhawk</span>
+      </div>
+      <div class="badge" id="spray-status">
+        <div class="badge-dot"></div>
+        <span>Spray System</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Left Column - Camera & Grid -->
+    <div class="camera-section">
+      <!-- Camera Card -->
+      <div class="card camera-card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">📷</div>
+            <span>Wall View</span>
+          </div>
+          <div class="view-toggle">
+            <button class="toggle-btn active" id="btn-live">Live</button>
+            <button class="toggle-btn" id="btn-analysis">Analysis</button>
+          </div>
+        </div>
+        <div class="view-container">
+          <img id="camera-feed" src="/camera_proxy" alt="Camera Feed" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 480%22%3E%3Crect fill=%22%231a1b26%22 width=%22640%22 height=%22480%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2364748b%22 text-anchor=%22middle%22 font-family=%22Inter%22 font-size=%2220%22%3E📷 Connecting to ESP32-CAM...%3C/text%3E%3C/svg%3E'">
+          <img id="captured-image" src="" alt="Captured Frame">
+          <canvas id="grid-canvas"></canvas>
+          <div class="view-overlay">
+            <div class="overlay-tag live" id="overlay-live">
+              <span>🔴</span> LIVE
+            </div>
+            <div class="overlay-tag captured" id="overlay-captured" style="display:none;">
+              <span>📸</span> CAPTURED
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="card">
+        <div class="card-body">
+          <div class="btn-group">
+            <button class="btn btn-primary" id="btn-capture">
+              📸 Capture & Analyze
+            </button>
+            <button class="btn btn-outline" id="btn-select-all">
+              ☑️ Select All
+            </button>
+            <button class="btn btn-outline" id="btn-clear">
+              🗑️ Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission Progress -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">🎯</div>
+            <span>Mission Progress</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="progress-container">
+            <div class="progress-header">
+              <span class="progress-title">Painting Progress</span>
+              <span class="progress-percent" id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-stats">
+              <span id="cells-painted">0 cells painted</span>
+              <span id="cells-remaining">0 remaining</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Control Panel -->
+    <div class="control-panel">
+      <!-- Statistics -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">📊</div>
+            <span>Statistics</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-value" id="stat-total">96</div>
+              <div class="stat-label">Total Cells</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-unpainted">0</div>
+              <div class="stat-label">Unpainted</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-selected">0</div>
+              <div class="stat-label">Selected</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-sprayed">0</div>
+              <div class="stat-label">Sprayed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spray Controls -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">💨</div>
+            <span>Spray Controls</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="spray-controls">
+            <!-- Spray Mode Selector -->
+            <div class="spray-mode-selector">
+              <button class="spray-mode-btn active" id="mode-precision">⏱️ Precision</button>
+              <button class="spray-mode-btn" id="mode-continuous">♾️ Continuous</button>
+            </div>
+
+            <!-- Precision Mode Controls -->
+            <div id="precision-controls">
+              <div class="input-group">
+                <label class="input-label">Spray Duration</label>
+                <div class="input-row">
+                  <input type="number" class="input-field" id="spray-duration" value="800" min="100" max="5000" step="100">
+                  <span class="input-suffix">ms</span>
+                </div>
+              </div>
+              <button class="btn btn-warning" id="btn-spray-once">
+                💨 Spray Once
+              </button>
+            </div>
+
+            <!-- Continuous Mode Controls -->
+            <div id="continuous-controls" style="display: none;">
+              <div class="btn-group">
+                <button class="btn btn-success" id="btn-spray-start">
+                  ▶️ Start Spray
+                </button>
+                <button class="btn btn-danger" id="btn-spray-stop" disabled>
+                  ⏹️ Stop Spray
+                </button>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; text-align: center;">
+                ⚠️ Auto-shutoff after 30 seconds for safety
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission Control -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon">🚁</div>
+            <span>Mission Control</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mission-steps">
+            <div class="mission-step" id="step-1">
+              <div class="step-number">1</div>
+              <div class="step-info">
+                <div class="step-title">Capture Wall</div>
+                <div class="step-desc">Take photo for analysis</div>
+              </div>
+            </div>
+            <div class="mission-step" id="step-2">
+              <div class="step-number">2</div>
+              <div class="step-info">
+                <div class="step-title">Select Areas</div>
+                <div class="step-desc">Click unpainted cells</div>
+              </div>
+            </div>
+            <div class="mission-step" id="step-3">
+              <div class="step-number">3</div>
+              <div class="step-info">
+                <div class="step-title">Start Mission</div>
+                <div class="step-desc">Begin autonomous painting</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn btn-primary" id="btn-start-mission" disabled>
+              🚀 Start Autonomous Mission
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Console Log -->
+      <div class="console">
+        <div class="console-header">
+          <span class="console-title">Activity Log</span>
+          <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.7rem;" id="btn-clear-log">Clear</button>
+        </div>
+        <div class="console-body" id="console-body">
+          <div class="log-entry">
+            <span class="log-time">--:--:--</span>
+            <span class="log-msg info">System initialized. Waiting for connections...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <span>© 2024 VIT Chennai — Multi-Disciplinary Project</span>
+    <div class="footer-links">
+      <a href="https://github.com/daksh1403/auto-drone" target="_blank">GitHub</a>
+      <a href="#">Documentation</a>
+      <a href="#">Help</a>
+    </div>
+  </footer>
+</div>
+
+<!-- Emergency Stop Modal -->
+<div class="modal-overlay" id="emergency-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ Emergency Stop</span>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom: 16px;">Are you sure you want to perform an emergency stop? This will:</p>
+      <ul style="margin-left: 20px; color: var(--text-secondary);">
+        <li>Immediately stop spray system</li>
+        <li>Command drone to hover in place</li>
+        <li>Cancel current mission</li>
+      </ul>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="emergencyStop()">🛑 Confirm Stop</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONFIGURATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  GRID_ROWS: 8,
+  GRID_COLS: 12,
+  ESP32_IP: '192.168.4.1',
+  BACKEND_URL: '',  // Same origin
+  PING_INTERVAL: 3000,
+  DEFAULT_SPRAY_DURATION: 800
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const state = {
+  espConnected: false,
+  droneConnected: false,
+  isSpraying: false,
+  sprayMode: 'precision',  // 'precision' or 'continuous'
+  viewMode: 'live',        // 'live' or 'analysis'
+  grid: [],                // 2D array: null=empty, 'unpainted', 'selected', 'sprayed'
+  currentStep: 0,
+  missionActive: false,
+  totalCells: CONFIG.GRID_ROWS * CONFIG.GRID_COLS,
+  stats: {
+    unpainted: 0,
+    selected: 0,
+    sprayed: 0
+  }
+};
+
+// Initialize grid
+for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+  state.grid[r] = [];
+  for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+    state.grid[r][c] = null;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DOM ELEMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const DOM = {
+  // Status badges
+  espStatus: document.getElementById('esp-status'),
+  droneStatus: document.getElementById('drone-status'),
+  sprayStatus: document.getElementById('spray-status'),
+  
+  // View elements
+  cameraFeed: document.getElementById('camera-feed'),
+  capturedImage: document.getElementById('captured-image'),
+  gridCanvas: document.getElementById('grid-canvas'),
+  overlayLive: document.getElementById('overlay-live'),
+  overlayCaptured: document.getElementById('overlay-captured'),
+  
+  // Buttons
+  btnLive: document.getElementById('btn-live'),
+  btnAnalysis: document.getElementById('btn-analysis'),
+  btnCapture: document.getElementById('btn-capture'),
+  btnSelectAll: document.getElementById('btn-select-all'),
+  btnClear: document.getElementById('btn-clear'),
+  btnSprayOnce: document.getElementById('btn-spray-once'),
+  btnSprayStart: document.getElementById('btn-spray-start'),
+  btnSprayStop: document.getElementById('btn-spray-stop'),
+  btnStartMission: document.getElementById('btn-start-mission'),
+  btnClearLog: document.getElementById('btn-clear-log'),
+  
+  // Mode selectors
+  modePrecision: document.getElementById('mode-precision'),
+  modeContinuous: document.getElementById('mode-continuous'),
+  precisionControls: document.getElementById('precision-controls'),
+  continuousControls: document.getElementById('continuous-controls'),
+  
+  // Inputs
+  sprayDuration: document.getElementById('spray-duration'),
+  
+  // Stats
+  statTotal: document.getElementById('stat-total'),
+  statUnpainted: document.getElementById('stat-unpainted'),
+  statSelected: document.getElementById('stat-selected'),
+  statSprayed: document.getElementById('stat-sprayed'),
+  
+  // Progress
+  progressPercent: document.getElementById('progress-percent'),
+  progressFill: document.getElementById('progress-fill'),
+  cellsPainted: document.getElementById('cells-painted'),
+  cellsRemaining: document.getElementById('cells-remaining'),
+  
+  // Mission steps
+  step1: document.getElementById('step-1'),
+  step2: document.getElementById('step-2'),
+  step3: document.getElementById('step-3'),
+  
+  // Console
+  consoleBody: document.getElementById('console-body'),
+  
+  // Modal
+  emergencyModal: document.getElementById('emergency-modal')
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOGGING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function log(msg, type = 'info') {
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `
+    <span class="log-time">${time}</span>
+    <span class="log-msg ${type}">${msg}</span>
+  `;
+  DOM.consoleBody.appendChild(entry);
+  DOM.consoleBody.scrollTop = DOM.consoleBody.scrollHeight;
+  
+  // Keep only last 50 entries
+  while (DOM.consoleBody.children.length > 50) {
+    DOM.consoleBody.removeChild(DOM.consoleBody.firstChild);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONNECTION STATUS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+async function checkESP32() {
+  try {
+    const res = await fetch('/esp_ping', { timeout: 2000 });
+    const data = await res.json();
+    state.espConnected = data.status === 'ok';
+    DOM.espStatus.classList.toggle('connected', state.espConnected);
+    if (state.espConnected && !DOM.espStatus.dataset.logged) {
+      log('ESP32-CAM connected ✓', 'success');
+      DOM.espStatus.dataset.logged = 'true';
+    }
+  } catch (e) {
+    state.espConnected = false;
+    DOM.espStatus.classList.remove('connected');
+    DOM.espStatus.dataset.logged = '';
+  }
+}
+
+async function checkDrone() {
+  try {
+    const res = await fetch('/drone/status', { timeout: 2000 });
+    const data = await res.json();
+    state.droneConnected = data.connected === true;
+    DOM.droneStatus.classList.toggle('connected', state.droneConnected);
+  } catch (e) {
+    state.droneConnected = false;
+    DOM.droneStatus.classList.remove('connected');
+  }
+}
+
+function startStatusPolling() {
+  checkESP32();
+  checkDrone();
+  setInterval(() => {
+    checkESP32();
+    checkDrone();
+  }, CONFIG.PING_INTERVAL);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIEW TOGGLE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function setViewMode(mode) {
+  state.viewMode = mode;
+  DOM.btnLive.classList.toggle('active', mode === 'live');
+  DOM.btnAnalysis.classList.toggle('active', mode === 'analysis');
+  
+  if (mode === 'live') {
+    DOM.cameraFeed.style.display = 'block';
+    DOM.capturedImage.style.display = 'none';
+    DOM.overlayLive.style.display = 'flex';
+    DOM.overlayCaptured.style.display = 'none';
+    clearGrid();
+  } else {
+    DOM.overlayLive.style.display = 'none';
+    DOM.overlayCaptured.style.display = 'flex';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GRID DRAWING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const canvas = DOM.gridCanvas;
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  drawGrid();
+}
+
+function drawGrid() {
+  const w = canvas.width;
+  const h = canvas.height;
+  const cellW = w / CONFIG.GRID_COLS;
+  const cellH = h / CONFIG.GRID_ROWS;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Draw cells
+  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+      const x = c * cellW;
+      const y = r * cellH;
+      const status = state.grid[r][c];
+      
+      if (status === 'unpainted') {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.fillRect(x, y, cellW, cellH);
+      } else if (status === 'selected') {
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
+        ctx.fillRect(x, y, cellW, cellH);
+        // Draw selection indicator
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 2, y + 2, cellW - 4, cellH - 4);
+      } else if (status === 'sprayed') {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.5)';
+        ctx.fillRect(x, y, cellW, cellH);
+        // Draw checkmark
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + cellW * 0.25, y + cellH * 0.5);
+        ctx.lineTo(x + cellW * 0.45, y + cellH * 0.7);
+        ctx.lineTo(x + cellW * 0.75, y + cellH * 0.3);
+        ctx.stroke();
+      }
+    }
+  }
+  
+  // Draw grid lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 1;
+  
+  for (let r = 0; r <= CONFIG.GRID_ROWS; r++) {
+    ctx.beginPath();
+    ctx.moveTo(0, r * cellH);
+    ctx.lineTo(w, r * cellH);
+    ctx.stroke();
+  }
+  
+  for (let c = 0; c <= CONFIG.GRID_COLS; c++) {
+    ctx.beginPath();
+    ctx.moveTo(c * cellW, 0);
+    ctx.lineTo(c * cellW, h);
+    ctx.stroke();
+  }
+}
+
+function clearGrid() {
+  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+      state.grid[r][c] = null;
+    }
+  }
+  updateStats();
+  drawGrid();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GRID CLICK HANDLING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+canvas.addEventListener('click', (e) => {
+  if (state.viewMode !== 'analysis') return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const c = Math.floor(x / (canvas.width / CONFIG.GRID_COLS));
+  const r = Math.floor(y / (canvas.height / CONFIG.GRID_ROWS));
+  
+  if (r >= 0 && r < CONFIG.GRID_ROWS && c >= 0 && c < CONFIG.GRID_COLS) {
+    const current = state.grid[r][c];
+    
+    if (current === 'unpainted') {
+      state.grid[r][c] = 'selected';
+      log(`Cell [${r},${c}] selected`, 'info');
+    } else if (current === 'selected') {
+      state.grid[r][c] = 'unpainted';
+      log(`Cell [${r},${c}] deselected`, 'info');
+    }
+    
+    updateStats();
+    drawGrid();
+    updateMissionButton();
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATS UPDATE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function updateStats() {
+  let unpainted = 0, selected = 0, sprayed = 0;
+  
+  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+      const s = state.grid[r][c];
+      if (s === 'unpainted') unpainted++;
+      else if (s === 'selected') selected++;
+      else if (s === 'sprayed') sprayed++;
+    }
+  }
+  
+  state.stats = { unpainted, selected, sprayed };
+  
+  DOM.statTotal.textContent = state.totalCells;
+  DOM.statUnpainted.textContent = unpainted;
+  DOM.statSelected.textContent = selected;
+  DOM.statSprayed.textContent = sprayed;
+  
+  // Update progress
+  const total = unpainted + selected + sprayed;
+  const progress = total > 0 ? Math.round((sprayed / total) * 100) : 0;
+  DOM.progressPercent.textContent = progress + '%';
+  DOM.progressFill.style.width = progress + '%';
+  DOM.cellsPainted.textContent = sprayed + ' cells painted';
+  DOM.cellsRemaining.textContent = (unpainted + selected) + ' remaining';
+}
+
+function updateMissionButton() {
+  DOM.btnStartMission.disabled = state.stats.selected === 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CAPTURE & ANALYZE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+async function captureAndAnalyze() {
+  log('Capturing frame for analysis...', 'info');
+  DOM.btnCapture.disabled = true;
+  DOM.btnCapture.innerHTML = '⏳ Analyzing...';
+  
+  try {
+    const res = await fetch('/capture', { method: 'POST' });
+    const data = await res.json();
+    
+    if (data.success) {
+      // Show captured image
+      DOM.capturedImage.src = 'data:image/jpeg;base64,' + data.image_base64;
+      DOM.capturedImage.style.display = 'block';
+      DOM.cameraFeed.style.display = 'none';
+      
+      // Update grid with detection results
+      clearGrid();
+      for (const cell of data.unpainted_cells) {
+        state.grid[cell.row][cell.col] = 'unpainted';
+      }
+      
+      setViewMode('analysis');
+      updateStats();
+      drawGrid();
+      
+      log(`Analysis complete: ${data.unpainted_cells.length} unpainted cells detected`, 'success');
+      setMissionStep(1);
+    } else {
+      log('Capture failed: ' + (data.error || 'Unknown error'), 'error');
+    }
+  } catch (e) {
+    log('Capture error: ' + e.message, 'error');
+  }
+  
+  DOM.btnCapture.disabled = false;
+  DOM.btnCapture.innerHTML = '📸 Capture & Analyze';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SPRAY CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function setSprayMode(mode) {
+  state.sprayMode = mode;
+  DOM.modePrecision.classList.toggle('active', mode === 'precision');
+  DOM.modeContinuous.classList.toggle('active', mode === 'continuous');
+  DOM.precisionControls.style.display = mode === 'precision' ? 'block' : 'none';
+  DOM.continuousControls.style.display = mode === 'continuous' ? 'flex' : 'none';
+  log(`Spray mode: ${mode}`, 'info');
+}
+
+async function sprayOnce() {
+  const duration = parseInt(DOM.sprayDuration.value) || CONFIG.DEFAULT_SPRAY_DURATION;
+  log(`Spraying for ${duration}ms...`, 'warning');
+  
+  DOM.btnSprayOnce.disabled = true;
+  DOM.sprayStatus.classList.add('spraying');
+  state.isSpraying = true;
+  
+  try {
+    const res = await fetch('/spray', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ duration_ms: duration })
+    });
+    const data = await res.json();
+    
+    if (data.sprayed) {
+      log(`Spray complete (${duration}ms)`, 'success');
+    } else {
+      log('Spray failed: ' + (data.error || 'Unknown'), 'error');
+    }
+  } catch (e) {
+    log('Spray error: ' + e.message, 'error');
+  }
+  
+  state.isSpraying = false;
+  DOM.btnSprayOnce.disabled = false;
+  DOM.sprayStatus.classList.remove('spraying');
+}
+
+async function startContinuousSpray() {
+  log('Starting continuous spray...', 'warning');
+  
+  DOM.btnSprayStart.disabled = true;
+  DOM.btnSprayStop.disabled = false;
+  DOM.sprayStatus.classList.add('connected', 'spraying');
+  state.isSpraying = true;
+  
+  try {
+    const res = await fetch('/spray_start', { method: 'POST' });
+    const data = await res.json();
+    log('Continuous spray active (30s watchdog)', 'success');
+  } catch (e) {
+    log('Start spray error: ' + e.message, 'error');
+    stopContinuousSpray();
+  }
+}
+
+async function stopContinuousSpray() {
+  log('Stopping spray...', 'info');
+  
+  try {
+    await fetch('/spray_stop', { method: 'POST' });
+    log('Spray stopped', 'success');
+  } catch (e) {
+    log('Stop spray error: ' + e.message, 'error');
+  }
+  
+  state.isSpraying = false;
+  DOM.btnSprayStart.disabled = false;
+  DOM.btnSprayStop.disabled = true;
+  DOM.sprayStatus.classList.remove('spraying');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SMART PATH PLANNING - Groups adjacent cells for continuous spray
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function planSmartPath(selectedCells) {
+  /**
+   * Groups adjacent cells in each row for continuous spray.
+   * Returns array of "segments", each with:
+   *   { type: 'continuous' | 'precision', row, startCol, endCol, cells }
+   */
+  
+  // Group cells by row
+  const rowGroups = {};
+  for (const cell of selectedCells) {
+    if (!rowGroups[cell.row]) rowGroups[cell.row] = [];
+    rowGroups[cell.row].push(cell.col);
+  }
+  
+  const segments = [];
+  
+  // Process each row
+  for (const row in rowGroups) {
+    const cols = rowGroups[row].sort((a, b) => a - b);
+    
+    // Find consecutive sequences
+    let start = cols[0];
+    let prev = cols[0];
+    
+    for (let i = 1; i <= cols.length; i++) {
+      const current = cols[i];
+      
+      // If not consecutive or end of array
+      if (i === cols.length || current !== prev + 1) {
+        const length = prev - start + 1;
+        
+        if (length >= 2) {
+          // 2+ adjacent cells: continuous spray
+          segments.push({
+            type: 'continuous',
+            row: parseInt(row),
+            startCol: start,
+            endCol: prev,
+            cells: Array.from({ length: prev - start + 1 }, (_, i) => ({ row: parseInt(row), col: start + i }))
+          });
+        } else {
+          // Single cell: precision spray
+          segments.push({
+            type: 'precision',
+            row: parseInt(row),
+            startCol: start,
+            endCol: start,
+            cells: [{ row: parseInt(row), col: start }]
+          });
+        }
+        
+        if (i < cols.length) {
+          start = current;
+        }
+      }
+      
+      prev = current;
+    }
+  }
+  
+  // Sort segments: top to bottom, left to right
+  segments.sort((a, b) => {
+    if (a.row !== b.row) return a.row - b.row;
+    return a.startCol - b.startCol;
+  });
+  
+  return segments;
+}
+
+function showPathPreview(segments) {
+  /**
+   * Log the planned path before execution
+   */
+  log('━━━━━━ SMART PATH PLAN ━━━━━━', 'info');
+  
+  let continuousCount = 0;
+  let precisionCount = 0;
+  
+  for (const seg of segments) {
+    if (seg.type === 'continuous') {
+      log(`Row ${seg.row}: CONTINUOUS [${seg.startCol}→${seg.endCol}] (${seg.cells.length} cells)`, 'warning');
+      continuousCount += seg.cells.length;
+    } else {
+      log(`Row ${seg.row}: PRECISION [${seg.startCol}]`, 'info');
+      precisionCount++;
+    }
+  }
+  
+  log(`Total: ${continuousCount} continuous + ${precisionCount} precision = ${continuousCount + precisionCount} cells`, 'success');
+  log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MISSION CONTROL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function setMissionStep(step) {
+  state.currentStep = step;
+  
+  [DOM.step1, DOM.step2, DOM.step3].forEach((el, i) => {
+    el.classList.remove('active', 'completed');
+    if (i < step) el.classList.add('completed');
+    else if (i === step) el.classList.add('active');
+  });
+}
+
+async function startMission() {
+  if (state.stats.selected === 0) {
+    log('No cells selected!', 'error');
+    return;
+  }
+  
+  // Collect selected cells
+  const selectedCells = [];
+  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+      if (state.grid[r][c] === 'selected') {
+        selectedCells.push({ row: r, col: c });
+      }
+    }
+  }
+  
+  // Plan smart path
+  const segments = planSmartPath(selectedCells);
+  showPathPreview(segments);
+  
+  log('🚀 Starting SMART autonomous mission...', 'info');
+  setMissionStep(2);
+  DOM.btnStartMission.disabled = true;
+  DOM.btnStartMission.innerHTML = '⏳ Mission in Progress...';
+  state.missionActive = true;
+  
+  // Start smart spray sequence with SSE
+  try {
+    const eventSource = new EventSource('/smart_spray_sequence?segments=' + encodeURIComponent(JSON.stringify(segments)));
+    
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.event === 'segment_start') {
+        if (data.type === 'continuous') {
+          log(`Row ${data.row}: Flying to start [${data.startCol}]...`, 'info');
+        } else {
+          log(`Row ${data.row}: Flying to cell [${data.col}]...`, 'info');
+        }
+      } else if (data.event === 'continuous_spray_start') {
+        log(`Row ${data.row}: CONTINUOUS spray started! Flying ${data.startCol}→${data.endCol}`, 'warning');
+        DOM.sprayStatus.classList.add('spraying');
+      } else if (data.event === 'continuous_spray_end') {
+        log(`Row ${data.row}: Continuous spray complete (${data.cells_count} cells)`, 'success');
+        // Mark all cells in segment as sprayed
+        for (const cell of data.cells) {
+          state.grid[cell.row][cell.col] = 'sprayed';
+        }
+        updateStats();
+        drawGrid();
+        DOM.sprayStatus.classList.remove('spraying');
+      } else if (data.event === 'precision_spray') {
+        log(`Row ${data.row}: Precision spray at [${data.col}]`, 'warning');
+        DOM.sprayStatus.classList.add('spraying');
+      } else if (data.event === 'precision_done') {
+        state.grid[data.row][data.col] = 'sprayed';
+        updateStats();
+        drawGrid();
+        log(`Cell [${data.row},${data.col}] ✓`, 'success');
+        DOM.sprayStatus.classList.remove('spraying');
+      } else if (data.event === 'complete') {
+        log('🎉 SMART mission complete!', 'success');
+        eventSource.close();
+        missionComplete();
+      } else if (data.event === 'error') {
+        log('Mission error: ' + data.message, 'error');
+        eventSource.close();
+        missionComplete();
+      }
+    };
+    
+    eventSource.onerror = () => {
+      log('Mission connection lost', 'error');
+      eventSource.close();
+      missionComplete();
+    };
+    
+  } catch (e) {
+    log('Mission start error: ' + e.message, 'error');
+    missionComplete();
+  }
+}
+
+function missionComplete() {
+  state.missionActive = false;
+  DOM.btnStartMission.disabled = false;
+  DOM.btnStartMission.innerHTML = '🚀 Start Autonomous Mission';
+  updateMissionButton();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SELECT ALL / CLEAR
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function selectAllUnpainted() {
+  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+      if (state.grid[r][c] === 'unpainted') {
+        state.grid[r][c] = 'selected';
+      }
+    }
+  }
+  updateStats();
+  drawGrid();
+  updateMissionButton();
+  log('All unpainted cells selected', 'info');
+}
+
+function clearSelection() {
+  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
+    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
+      if (state.grid[r][c] === 'selected') {
+        state.grid[r][c] = 'unpainted';
+      }
+    }
+  }
+  updateStats();
+  drawGrid();
+  updateMissionButton();
+  log('Selection cleared', 'info');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function showModal() {
+  DOM.emergencyModal.classList.add('show');
+}
+
+function closeModal() {
+  DOM.emergencyModal.classList.remove('show');
+}
+
+async function emergencyStop() {
+  log('🛑 EMERGENCY STOP!', 'error');
+  closeModal();
+  
+  try {
+    await fetch('/spray_stop', { method: 'POST' });
+    await fetch('/drone/loiter', { method: 'POST' });
+    log('Emergency stop executed', 'warning');
+  } catch (e) {
+    log('Emergency stop error: ' + e.message, 'error');
+  }
+  
+  state.isSpraying = false;
+  state.missionActive = false;
+  DOM.sprayStatus.classList.remove('spraying');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+DOM.btnLive.addEventListener('click', () => setViewMode('live'));
+DOM.btnAnalysis.addEventListener('click', () => setViewMode('analysis'));
+DOM.btnCapture.addEventListener('click', captureAndAnalyze);
+DOM.btnSelectAll.addEventListener('click', selectAllUnpainted);
+DOM.btnClear.addEventListener('click', clearSelection);
+DOM.modePrecision.addEventListener('click', () => setSprayMode('precision'));
+DOM.modeContinuous.addEventListener('click', () => setSprayMode('continuous'));
+DOM.btnSprayOnce.addEventListener('click', sprayOnce);
+DOM.btnSprayStart.addEventListener('click', startContinuousSpray);
+DOM.btnSprayStop.addEventListener('click', stopContinuousSpray);
+DOM.btnStartMission.addEventListener('click', startMission);
+DOM.btnClearLog.addEventListener('click', () => {
+  DOM.consoleBody.innerHTML = '';
+  log('Log cleared', 'info');
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.missionActive) {
+    showModal();
+  }
+  if (e.key === ' ' && !state.isSpraying && state.espConnected) {
+    e.preventDefault();
+    sprayOnce();
+  }
+});
+
+// Window resize
+window.addEventListener('resize', resizeCanvas);
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INITIALIZATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  resizeCanvas();
+  startStatusPolling();
+  setMissionStep(0);
+  log('PaintDrone Control Panel v2.0 loaded', 'success');
+  log('Keyboard: SPACE=spray, ESC=emergency stop', 'info');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+flask>=2.3.0
+flask-cors>=4.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+requests>=2.31.0
+dronekit>=2.9.2
+pymavlink>=2.4.40
+future>=0.18.3
