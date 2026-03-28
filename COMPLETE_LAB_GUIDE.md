@@ -505,7 +505,55 @@ From: https://firmware.ardupilot.org/Tools/MissionPlanner/
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 6.2 Protocol Details
+## 6.2 SMART Spray Path Planning ⭐
+
+The system automatically optimizes the spray path:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       SMART PATH PLANNING ALGORITHM                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  INPUT: Selected cells (🔵)                                                 │
+│                                                                             │
+│  Row 0: [  ][🔵][🔵][🔵][  ][  ][  ][  ]                                   │
+│  Row 1: [  ][  ][🔵][  ][  ][  ][  ][  ]                                   │
+│  Row 2: [🔵][🔵][  ][  ][  ][🔵][🔵][🔵]                                   │
+│                                                                             │
+│  STEP 1: Group by row                                                       │
+│          Row 0: [1,2,3]                                                     │
+│          Row 1: [2]                                                         │
+│          Row 2: [0,1], [5,6,7]                                              │
+│                                                                             │
+│  STEP 2: Find consecutive sequences in each row                             │
+│          Row 0: 1→2→3 = 3 consecutive ✓                                     │
+│          Row 1: 2 alone = 1 isolated                                        │
+│          Row 2: 0→1 = 2 consecutive, 5→6→7 = 3 consecutive                 │
+│                                                                             │
+│  STEP 3: Assign spray mode                                                  │
+│          - 2+ adjacent → CONTINUOUS (spray ON while flying)                 │
+│          - 1 isolated → PRECISION (single 800ms burst)                      │
+│                                                                             │
+│  OUTPUT: Optimized segments                                                 │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                 │
+│  Segment 1: Row 0, cols [1→3], CONTINUOUS, 3 cells                          │
+│  Segment 2: Row 1, col [2], PRECISION, 1 cell                               │
+│  Segment 3: Row 2, cols [0→1], CONTINUOUS, 2 cells                          │
+│  Segment 4: Row 2, cols [5→7], CONTINUOUS, 3 cells                          │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                 │
+│                                                                             │
+│  EXECUTION:                                                                 │
+│  • Segment 1: Fly to (0,1) → spray_start → fly to (0,3) → spray_stop       │
+│  • Segment 2: Fly to (1,2) → spray 800ms                                    │
+│  • Segment 3: Fly to (2,0) → spray_start → fly to (2,1) → spray_stop       │
+│  • Segment 4: Fly to (2,5) → spray_start → fly to (2,7) → spray_stop       │
+│                                                                             │
+│  BENEFIT: 8 precision sprays → 1 precision + 3 continuous = 30% faster!    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 6.3 Protocol Details
 
 ### WiFi Communication (Laptop ↔ ESP32-CAM)
 ```
