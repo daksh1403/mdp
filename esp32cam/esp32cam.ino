@@ -1,14 +1,14 @@
 /*
  * ============================================================
- *  ESP32-CAM — Paint-Drone Controller (Final Version)
+ *  ESP32-CAM — Autonomous Painting System Controller
  * ============================================================
  *
- *  Dual-port HTTP server for autonomous wall painting drone:
+ *  Dual-port HTTP server for autonomous wall painting system:
  *    Port 80 → Control: /ping /status /spray /spray_start
  *                       /spray_stop /capture_frame
  *    Port 81 → Stream:  /stream (MJPEG)
  *
- *  WiFi AP:   SSID = PaintDrone, Password = paintdrone123
+ *  WiFi AP:   SSID = PaintSystem, Password = paintdrone123
  *  AP IP:     192.168.4.1
  *  Relay:     GPIO 13 (active HIGH)
  *
@@ -21,7 +21,7 @@
  *    3. Upload this sketch
  *    4. Remove IO0-GND jumper
  *    5. Press RESET on ESP32-CAM
- *    6. "PaintDrone" WiFi should appear
+ *    6. "PaintSystem" WiFi should appear
  * ============================================================
  */
 
@@ -33,7 +33,7 @@
 // ══════════════════════════════════════════════════════════════
 //  WiFi AP Configuration
 // ══════════════════════════════════════════════════════════════
-const char* AP_SSID     = "PaintDrone";
+const char* AP_SSID     = "PaintSystem";
 const char* AP_PASSWORD = "paintdrone123";
 
 // ══════════════════════════════════════════════════════════════
@@ -97,7 +97,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\n");
   Serial.println("╔══════════════════════════════════════════╗");
-  Serial.println("║   ESP32-CAM Paint Drone Controller       ║");
+  Serial.println("║   ESP32-CAM Painting System Controller   ║");
   Serial.println("║   VIT Chennai MDP Project                ║");
   Serial.println("╚══════════════════════════════════════════╝");
 
@@ -144,7 +144,7 @@ void setup() {
   Serial.println("[HTTP] Stream server started on port 81");
 
   Serial.println("\n[READY] ESP32-CAM is ready!");
-  Serial.println("        Connect to WiFi: PaintDrone");
+  Serial.println("        Connect to WiFi: PaintSystem");
   Serial.println("        Test: http://192.168.4.1/ping");
   Serial.println("        Stream: http://192.168.4.1:81/stream\n");
 }
