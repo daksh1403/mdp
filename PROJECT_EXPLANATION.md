@@ -32,19 +32,26 @@ PaintDrone is an **autonomous drone system that paints walls**. Here's the compl
 ## 📁 File Structure Explained
 
 ```
-C:\mdp\
+mdp_repo/
+├── backend/
+│   ├── app.py                ← Flask web server (main brain)
+│   ├── drone_controller.py   ← DroneKit wrapper for Pixhawk 2.4.8
+│   ├── demo_simulation.py    ← SITL demo for lab incharge
+│   ├── test_connection.py    ← USB connection test script
+│   ├── test_arm.py           ← Arm test (props OFF!)
+│   ├── test_hover.py         ← 1m hover test
+│   └── static/
+│       └── index.html        ← Web UI (professional design)
 ├── esp32cam/
 │   └── esp32cam.ino          ← ESP32-CAM firmware (camera + spray control)
 ├── esp32s3/
 │   └── esp32s3.ino           ← USB-to-Serial bridge for programming
-├── backend/
-│   ├── app.py                ← Flask web server (main brain)
-│   ├── drone_controller.py   ← DroneKit wrapper for Pixhawk
-│   ├── demo_simulation.py    ← SITL demo for lab incharge
-│   └── static/
-│       └── index.html        ← Web UI (professional design)
 ├── requirements.txt          ← Python dependencies
-└── LAB_IMPLEMENTATION_GUIDE.md ← Step-by-step guide
+├── COMPLETE_LAB_PROCEDURE.md ← Step-by-step lab testing guide
+├── LAB_SAFETY_CHECKLIST.md   ← Safety checkpoints
+├── DRONE_PARAMETERS.md       ← Configurable parameters
+├── drone_specs.md            ← Hardware specs (Drone #3)
+└── README.md                 ← This file
 ```
 
 ---
