@@ -18,7 +18,7 @@ import sys
 # ════════════════════════════════════════════════════════
 #  CONFIGURATION — Update these for your setup
 # ════════════════════════════════════════════════════════
-CONNECTION = 'COM3'  # Check Device Manager for actual port
+CONNECTION = 'COM9'  # Check Device Manager for actual port
 BAUD = 115200        # USB baud rate (use 57600 for TELEM)
 
 print("="*60)

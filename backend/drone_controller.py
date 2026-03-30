@@ -85,7 +85,7 @@ MAX_DISTANCE       = 3.0     # meters from home — INDOOR GEOFENCE
 # For SITL simulation:
 #   'tcp:127.0.0.1:5762'
 # ────────────────────────────────────────────────────────────────
-CONNECTION_STRING = 'COM3'   # USB connection for Pixhawk 2.4.8
+CONNECTION_STRING = 'COM9'   # USB connection for Pixhawk 2.4.8
 BAUD_RATE = 115200           # USB baud rate (use 57600 for TELEM)
 
 

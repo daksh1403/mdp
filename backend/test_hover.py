@@ -27,7 +27,7 @@ import sys
 TARGET_ALTITUDE = 1.0   # meters — INDOOR LAB HEIGHT
 MAX_ALTITUDE = 1.5      # meters — absolute ceiling
 HOVER_TIME = 10         # seconds
-CONNECTION = 'COM3'
+CONNECTION = 'COM9'
 BAUD = 115200
 
 print("="*60)
