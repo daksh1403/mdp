@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎨 PaintDrone — Autonomous Wall Painting System</title>
+<title>🎨 Autonomous Painting System — Wall Painting Control</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -856,7 +856,7 @@ body {
     <div class="logo">
       <div class="logo-icon">🎨</div>
       <div class="logo-text">
-        <h1>PaintDrone</h1>
+        <h1>Autonomous Painting System</h1>
         <span>VIT Chennai MDP</span>
       </div>
     </div>
@@ -864,10 +864,6 @@ body {
       <div class="badge" id="esp-status">
         <div class="badge-dot"></div>
         <span>ESP32-CAM</span>
-      </div>
-      <div class="badge" id="drone-status">
-        <div class="badge-dot"></div>
-        <span>Pixhawk</span>
       </div>
       <div class="badge" id="spray-status">
         <div class="badge-dot"></div>
@@ -1034,7 +1030,7 @@ body {
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <div class="card-title-icon">🚁</div>
+            <div class="card-title-icon">🎯</div>
             <span>Mission Control</span>
           </div>
         </div>
@@ -1108,7 +1104,6 @@ body {
       <p style="margin-bottom: 16px;">Are you sure you want to perform an emergency stop? This will:</p>
       <ul style="margin-left: 20px; color: var(--text-secondary);">
         <li>Immediately stop spray system</li>
-        <li>Command drone to hover in place</li>
         <li>Cancel current mission</li>
       </ul>
     </div>
@@ -1137,7 +1132,6 @@ const CONFIG = {
    ═══════════════════════════════════════════════════════════════════════════════ */
 const state = {
   espConnected: false,
-  droneConnected: false,
   isSpraying: false,
   sprayMode: 'precision',  // 'precision' or 'continuous'
   viewMode: 'live',        // 'live' or 'analysis'
@@ -1166,7 +1160,6 @@ for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
 const DOM = {
   // Status badges
   espStatus: document.getElementById('esp-status'),
-  droneStatus: document.getElementById('drone-status'),
   sprayStatus: document.getElementById('spray-status'),
   
   // View elements
@@ -1261,24 +1254,10 @@ async function checkESP32() {
   }
 }
 
-async function checkDrone() {
-  try {
-    const res = await fetch('/drone/status', { timeout: 2000 });
-    const data = await res.json();
-    state.droneConnected = data.connected === true;
-    DOM.droneStatus.classList.toggle('connected', state.droneConnected);
-  } catch (e) {
-    state.droneConnected = false;
-    DOM.droneStatus.classList.remove('connected');
-  }
-}
-
 function startStatusPolling() {
   checkESP32();
-  checkDrone();
   setInterval(() => {
     checkESP32();
-    checkDrone();
   }, CONFIG.PING_INTERVAL);
 }
 
@@ -1811,7 +1790,6 @@ async function emergencyStop() {
   
   try {
     await fetch('/spray_stop', { method: 'POST' });
-    await fetch('/drone/loiter', { method: 'POST' });
     log('Emergency stop executed', 'warning');
   } catch (e) {
     log('Emergency stop error: ' + e.message, 'error');
@@ -1862,7 +1840,7 @@ document.addEventListener('DOMContentLoaded', () => {
   resizeCanvas();
   startStatusPolling();
   setMissionStep(0);
-  log('PaintDrone Control Panel v2.0 loaded', 'success');
+  log('Autonomous Painting System v2.0 loaded', 'success');
   log('Keyboard: SPACE=spray, ESC=emergency stop', 'info');
 });
 </script>

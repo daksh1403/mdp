@@ -1,32 +1,22 @@
 """
 ============================================================
- Flask Backend — Paint-Drone Control Server
- VIT Chennai Multi-Disciplinary Project — Drone #3
+ Flask Backend — Autonomous Painting System
+ VIT Chennai Multi-Disciplinary Project
 ============================================================
 
 Runs on laptop. Connects to:
   - ESP32-CAM (192.168.4.1) for camera and spray control
-  - Pixhawk 2.4.8 for autonomous drone flight (via USB/COM3)
-
-HARDWARE: Pixhawk 2.4.8 | F450 Quad | FlySky FS-IA6B | 3S 3300mAh
-
-INDOOR LAB SETTINGS:
-  - Max altitude: 1.5m (ceiling limit)
-  - Painting altitude: 1.0m
-  - Geofence: 3.0m radius
 
 Endpoints:
   GET  /               → Web UI
   GET  /video_feed     → Proxy MJPEG stream from ESP32-CAM
   GET  /ping           → ESP32-CAM connectivity check
   POST /capture        → Capture frame + run paint detection
-  POST /spray_sequence → Precision spray (cell by cell)
-  POST /spray_sequence_continuous → Continuous spray (row by row)
-  POST /drone/connect  → Connect to Pixhawk
-  GET  /drone/status   → Drone telemetry
-  POST /drone/arm_takeoff → Arm and takeoff
-  POST /drone/land     → Land at current position
-  POST /drone/rtl      → Return to launch
+  POST /spray          → Fire spray for specified duration
+  POST /spray_start    → Start continuous spray
+  POST /spray_stop     → Stop spray immediately
+  GET  /spray_sequence → Precision spray (cell by cell)
+  GET  /smart_spray_sequence → Smart spray (continuous + precision)
 
 Run: python app.py
 ============================================================
@@ -42,10 +32,6 @@ import requests
 from flask import Flask, Response, request, jsonify, send_from_directory
 from flask_cors import CORS
 
-# Import drone controller
-from drone_controller import DroneController, cells_to_waypoints, group_cells_by_row
-from drone_controller import PAINTING_ALTITUDE, SPRAY_DURATION_MS, CONTINUOUS_SPEED
-
 # ══════════════════════════════════════════════════════════════
 #  Configuration
 # ══════════════════════════════════════════════════════════════
@@ -58,15 +44,15 @@ ESP32_STREAM  = "http://192.168.4.1:81"   # Port 81 - MJPEG stream
 GRID_ROWS = 8
 GRID_COLS = 12
 
+# Spray settings
+SPRAY_DURATION_MS = 800  # milliseconds per cell
+
 # ══════════════════════════════════════════════════════════════
 #  Flask App
 # ══════════════════════════════════════════════════════════════
 
 app = Flask(__name__, static_folder="static")
 CORS(app)
-
-# Drone controller singleton
-drone = DroneController()
 
 # ESP32-CAM last contact timestamp (for connectivity check)
 _esp32_lock = threading.Lock()
@@ -442,92 +428,17 @@ def camera_proxy():
 
 
 # ══════════════════════════════════════════════════════════════
-#  Routes — Drone Control
-# ══════════════════════════════════════════════════════════════
-
-@app.route("/drone/connect", methods=["POST"])
-def drone_connect():
-    """Connect to Pixhawk via DroneKit."""
-    data = request.get_json(force=True)
-    conn = data.get("connection", "tcp:127.0.0.1:5762")
-    drone.connection_string = conn
-
-    success = drone.connect()
-    if success:
-        return jsonify({
-            "connected": True,
-            "message": f"Connected via {conn}"
-        })
-    else:
-        return jsonify({
-            "connected": False,
-            "message": "Connection failed"
-        }), 500
-
-
-@app.route("/drone/status", methods=["GET"])
-def drone_status():
-    """Return current drone telemetry."""
-    return jsonify(drone.get_status())
-
-
-@app.route("/drone/arm_takeoff", methods=["POST"])
-def drone_arm_takeoff():
-    """Arm drone and takeoff."""
-    data = request.get_json(force=True) if request.data else {}
-    alt = data.get("altitude", PAINTING_ALTITUDE)
-
-    ready, msg = drone.is_ready_to_fly()
-    if not ready:
-        return jsonify({"error": msg}), 400
-
-    def do_takeoff():
-        try:
-            drone.arm_and_takeoff(alt)
-        except Exception as e:
-            print(f"[arm_takeoff] Error: {e}")
-
-    threading.Thread(target=do_takeoff, daemon=True).start()
-    return jsonify({"status": "taking_off", "altitude": alt})
-
-
-@app.route("/drone/land", methods=["POST"])
-def drone_land():
-    """Land at current position."""
-    drone.land()
-    return jsonify({"status": "landing"})
-
-
-@app.route("/drone/rtl", methods=["POST"])
-def drone_rtl():
-    """Return to launch."""
-    drone.return_to_launch()
-    return jsonify({"status": "returning_to_launch"})
-
-
-@app.route("/drone/loiter", methods=["POST"])
-def drone_loiter():
-    """Hold position (emergency stop)."""
-    if drone.connected:
-        drone.vehicle.mode = "LOITER"
-    return jsonify({"status": "loiter"})
-
-
-# ══════════════════════════════════════════════════════════════
 #  Routes — Spray Sequences
 # ══════════════════════════════════════════════════════════════
 
 @app.route("/spray_sequence", methods=["GET", "POST"])
 def spray_sequence():
     """
-    PRECISION MODE: Fly to each cell, hover, spray.
+    PRECISION MODE: Move to each cell, spray.
     Supports both POST body and GET query params for SSE.
     
     POST Body or GET ?cells=JSON:
       cells: [{row: 0, col: 1}, ...] or [[row,col], ...]
-      use_drone: true/false
-      origin_lat: 12.9716
-      origin_lon: 80.2209
     """
     # Handle both GET (SSE from browser) and POST
     if request.method == "GET":
@@ -536,15 +447,9 @@ def spray_sequence():
             cells_raw = json.loads(cells_json)
         except:
             cells_raw = []
-        use_drone = request.args.get("use_drone", "false").lower() == "true"
-        origin_lat = request.args.get("origin_lat", type=float)
-        origin_lon = request.args.get("origin_lon", type=float)
     else:
         data = request.get_json(force=True) if request.data else {}
         cells_raw = data.get("cells", [])
-        use_drone = data.get("use_drone", False)
-        origin_lat = data.get("origin_lat", None)
-        origin_lon = data.get("origin_lon", None)
 
     # Normalize cells to (row, col) tuples
     cells = []
@@ -565,19 +470,8 @@ def spray_sequence():
             # Send "moving" event
             yield f"data: {json.dumps({'event':'moving','cell':i+1,'total':n,'row':row,'col':col})}\n\n"
 
-            if use_drone and drone.connected and origin_lat and origin_lon:
-                # DRONE MODE: Fly to GPS position
-                waypoints = cells_to_waypoints(
-                    [(row, col)], origin_lat, origin_lon)
-                wp = waypoints[0]
-
-                drone.goto_global(wp["lat"], wp["lon"], wp["alt"])
-                drone.wait_until_reached(wp["lat"], wp["lon"],
-                                          tolerance_m=0.5, timeout=30)
-                drone.hover(0.5)
-            else:
-                # MANUAL MODE: Countdown for person to move
-                time.sleep(2)
+            # Wait for manual positioning
+            time.sleep(2)
 
             # Send "spraying" event
             yield f"data: {json.dumps({'event':'spraying','cell':i+1,'row':row,'col':col})}\n\n"
@@ -601,92 +495,7 @@ def spray_sequence():
             # Send "done" event
             yield f"data: {json.dumps({'event':'done','cell':i+1,'row':row,'col':col})}\n\n"
 
-        # Return home if using drone
-        if use_drone and drone.connected:
-            drone.return_to_launch()
-
         yield f"data: {json.dumps({'event':'complete','total':n})}\n\n"
-
-    return Response(generate(), mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache",
-                             "X-Accel-Buffering": "no",
-                             "Access-Control-Allow-Origin": "*"})
-
-
-@app.route("/spray_sequence_continuous", methods=["POST"])
-def spray_sequence_continuous():
-    """
-    CONTINUOUS MODE: Fly along rows with pump ON.
-    
-    Body: {
-      "cells": [[row,col], ...],
-      "origin_lat": 12.9716,
-      "origin_lon": 80.2209,
-      "speed": 0.3
-    }
-    """
-    data       = request.get_json(force=True)
-    cells      = data.get("cells", [])
-    origin_lat = data.get("origin_lat")
-    origin_lon = data.get("origin_lon")
-    speed      = data.get("speed", CONTINUOUS_SPEED)
-
-    if not cells:
-        return jsonify({"error": "No cells provided"}), 400
-    if not (origin_lat and origin_lon):
-        return jsonify({"error": "origin_lat/lon required for continuous mode"}), 400
-    if not drone.connected:
-        return jsonify({"error": "Drone not connected"}), 400
-
-    row_groups = group_cells_by_row(cells)
-    total_rows = len(row_groups)
-
-    def generate():
-        row_num = 0
-
-        for paint_row, cols in row_groups.items():
-            row_num += 1
-
-            first_wp = cells_to_waypoints(
-                [(paint_row, cols[0])], origin_lat, origin_lon)[0]
-            last_wp = cells_to_waypoints(
-                [(paint_row, cols[-1])], origin_lat, origin_lon)[0]
-
-            # Fly to row start
-            yield f"data: {json.dumps({'status':'flying_to_row','row':row_num,'total_rows':total_rows})}\n\n"
-
-            drone.goto_global(first_wp["lat"], first_wp["lon"], first_wp["alt"])
-            drone.wait_until_reached(first_wp["lat"], first_wp["lon"],
-                                      tolerance_m=0.5, timeout=30)
-            drone.hover(0.5)
-
-            # Start spray
-            yield f"data: {json.dumps({'status':'spray_start','row':row_num})}\n\n"
-            try:
-                requests.post(f"{ESP32_CONTROL}/spray_start", timeout=5)
-            except Exception as e:
-                print(f"[continuous] spray_start failed: {e}")
-
-            # Fly along row
-            yield f"data: {json.dumps({'status':'painting_row','row':row_num,'cols':cols})}\n\n"
-
-            drone.vehicle.groundspeed = speed
-            drone.goto_global(last_wp["lat"], last_wp["lon"], last_wp["alt"])
-            drone.wait_until_reached(last_wp["lat"], last_wp["lon"],
-                                      tolerance_m=0.5, timeout=60)
-
-            # Stop spray
-            try:
-                requests.post(f"{ESP32_CONTROL}/spray_stop", timeout=5)
-            except Exception as e:
-                print(f"[continuous] spray_stop failed: {e}")
-
-            yield f"data: {json.dumps({'status':'row_done','row':row_num})}\n\n"
-            time.sleep(1.0)
-
-        # RTL
-        drone.return_to_launch()
-        yield f"data: {json.dumps({'status':'complete','total_rows':total_rows})}\n\n"
 
     return Response(generate(), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache",
@@ -735,7 +544,7 @@ def smart_spray_sequence():
                 # Event: Starting segment
                 yield f"data: {json.dumps({'event':'segment_start','type':'continuous','row':row,'startCol':start_col,'endCol':end_col,'segment':idx+1,'total_segments':total_segments})}\n\n"
                 
-                # Simulate drone flying to start position (in real mode, would use DroneKit)
+                # Wait for manual positioning
                 time.sleep(1.5)
                 
                 # Start continuous spray
@@ -746,7 +555,7 @@ def smart_spray_sequence():
                 except Exception as e:
                     print(f"[smart] spray_start failed: {e}")
                 
-                # Simulate drone flying across all cells (time proportional to number of cells)
+                # Time proportional to number of cells
                 fly_time = len(cells) * 1.2  # ~1.2 seconds per cell
                 time.sleep(fly_time)
                 
@@ -767,7 +576,7 @@ def smart_spray_sequence():
                 # Event: Starting segment
                 yield f"data: {json.dumps({'event':'segment_start','type':'precision','row':row,'col':col,'segment':idx+1,'total_segments':total_segments})}\n\n"
                 
-                # Simulate flying to position
+                # Wait for manual positioning
                 time.sleep(1.5)
                 
                 # Event: Spraying
@@ -806,7 +615,7 @@ def smart_spray_sequence():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  Paint-Drone Flask Backend")
+    print("  Autonomous Painting System — Flask Backend")
     print("  VIT Chennai Multi-Disciplinary Project")
     print("=" * 60)
     print(f"  ESP32 Control : {ESP32_CONTROL}")
