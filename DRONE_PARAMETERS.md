@@ -1,6 +1,15 @@
-# 🚁 Drone Default Parameters
+# 🚁 Drone Default Parameters — Pixhawk 2.4.8 (Drone #3)
 
 This document lists all configurable parameters for the PaintDrone system.
+
+**Hardware:** Pixhawk 2.4.8 | F450 Quadcopter | FlySky FS-IA6B | 3S 3300mAh LiPo
+
+---
+
+## ⚠️ CURRENT MODE: INDOOR LAB TESTING
+
+> **WARNING:** Safety limits are configured for INDOOR operation.
+> Maximum altitude is 1.5m. Adjust before outdoor flights!
 
 ---
 
@@ -8,44 +17,46 @@ This document lists all configurable parameters for the PaintDrone system.
 
 | Parameter | Default Value | Description |
 |-----------|---------------|-------------|
-| `PAINTING_ALTITUDE` | `3.0 m` | Default height above ground for painting operations |
+| `PAINTING_ALTITUDE` | `1.0 m` | **INDOOR LAB** height for painting (reduced from 3.0m) |
 | `WALL_DISTANCE` | `0.5 m` | Distance from the wall to hover while painting |
 | `CELL_WIDTH_M` | `0.3 m` | Real-world width of one grid cell |
 | `CELL_HEIGHT_M` | `0.3 m` | Real-world height of one grid cell |
 | `SPRAY_DURATION_MS` | `800 ms` | Spray duration per cell |
-| `CONTINUOUS_SPEED` | `0.3 m/s` | Movement speed during continuous painting |
+| `CONTINUOUS_SPEED` | `0.2 m/s` | Movement speed (reduced for indoor safety) |
 | `GRID_COLS` | `12` | Number of columns in the painting grid |
 | `GRID_ROWS` | `8` | Number of rows in the painting grid |
 
 ---
 
-## ⚠️ Safety Limits
+## ⚠️ Safety Limits (Indoor Lab)
 
 | Parameter | Default Value | Description |
 |-----------|---------------|-------------|
-| `MAX_ALTITUDE` | `8.0 m` | Maximum allowed altitude — triggers RTL (Return To Launch) if exceeded |
-| `MIN_BATTERY` | `15%` | Minimum battery level — triggers RTL if below this threshold |
-| `MAX_DISTANCE` | `10.0 m` | Maximum allowed distance from home position — safety geofence limit |
+| `MAX_ALTITUDE` | `1.5 m` | **INDOOR CEILING** — triggers RTL if exceeded |
+| `MIN_BATTERY` | `20%` | Minimum battery level — triggers RTL if below |
+| `MAX_DISTANCE` | `3.0 m` | **INDOOR GEOFENCE** — maximum distance from home |
 
 ---
 
-## 🔌 Connection Settings
+## 🔌 Connection Settings — Pixhawk 2.4.8
 
 | Parameter | Default Value | Description |
 |-----------|---------------|-------------|
-| `CONNECTION_STRING` | `tcp:127.0.0.1:5762` | Default connection (SITL simulator) |
+| `CONNECTION_STRING` | `COM3` | USB connection (check Device Manager) |
+| `BAUD_RATE` | `115200` | USB baud rate |
 | `ESP32_CONTROL` | `http://192.168.4.1` | ESP32-CAM address for spray commands |
 
-### Connection Options
+### Connection Options for Pixhawk 2.4.8
 
-| Mode | Connection String |
-|------|-------------------|
-| **SITL (Simulator)** | `tcp:127.0.0.1:5762` |
-| **USB (Windows)** | `COM3` |
-| **USB (Linux)** | `/dev/ttyACM0` |
-| **Ethernet** | `udp:192.168.1.1:14550` |
-| **Radio (Windows)** | `COM5` |
-| **Radio (Linux)** | `/dev/ttyUSB0` |
+| Mode | Connection String | Baud Rate |
+|------|-------------------|-----------|
+| **USB (Windows)** | `COM3` | 115200 |
+| **USB (Linux)** | `/dev/ttyACM0` | 115200 |
+| **TELEM Radio (Windows)** | `COM5` | 57600 |
+| **TELEM Radio (Linux)** | `/dev/ttyUSB0` | 57600 |
+| **SITL (Simulator)** | `tcp:127.0.0.1:5762` | N/A |
+
+> ⚠️ **NOTE:** Pixhawk 2.4.8 has NO Ethernet port (unlike V6X). Use USB or TELEM radio only.
 
 ---
 
@@ -62,21 +73,39 @@ This document lists all configurable parameters for the PaintDrone system.
 All parameters are defined at the top of `backend/drone_controller.py`. To modify:
 
 ```python
-# Example: Change painting altitude to 4 meters
-PAINTING_ALTITUDE = 4.0
+# Example: Switch to outdoor mode (ONLY AFTER INDOOR TESTING)
+MAX_ALTITUDE       = 8.0     # meters
+PAINTING_ALTITUDE  = 3.0     # meters
+MAX_DISTANCE       = 10.0    # meters
 
-# Example: Increase grid size
-GRID_COLS = 16
-GRID_ROWS = 10
+# Example: Change USB port
+CONNECTION_STRING = 'COM4'   # Your actual COM port
 
-# Example: Change connection for real hardware
-CONNECTION_STRING = 'COM3'  # Windows USB
+# Example: Switch to TELEM radio
+CONNECTION_STRING = 'COM5'
+BAUD_RATE = 57600
 ```
+
+---
+
+## 🔋 Battery Information (Orange 3S 3300mAh)
+
+| Spec | Value |
+|------|-------|
+| Chemistry | LiPo |
+| Cells | 3S |
+| Nominal Voltage | 11.1V |
+| Full Charge | 12.6V |
+| Low Cutoff | 10.5V (3.5V/cell) |
+| Capacity | 3300 mAh |
+| Discharge Rate | 35C |
+| Connector | XT60 |
 
 ---
 
 ## 📝 Notes
 
-- Always test parameter changes in SITL simulation before flying with real hardware
-- Safety limits (MAX_ALTITUDE, MIN_BATTERY, MAX_DISTANCE) will automatically trigger RTL mode
-- Battery monitoring runs in a background thread and checks every 1 second
+- **INDOOR TESTING:** Always test with props OFF first!
+- Safety limits will automatically trigger RTL mode if exceeded
+- Battery monitoring runs in a background thread (checks every 1 second)
+- Always have a safety pilot with RC transmitter in STABILIZE mode override

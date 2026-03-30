@@ -1,12 +1,19 @@
 """
 ============================================================
  Flask Backend — Paint-Drone Control Server
- VIT Chennai Multi-Disciplinary Project
+ VIT Chennai Multi-Disciplinary Project — Drone #3
 ============================================================
 
 Runs on laptop. Connects to:
   - ESP32-CAM (192.168.4.1) for camera and spray control
-  - Pixhawk V6X for autonomous drone flight
+  - Pixhawk 2.4.8 for autonomous drone flight (via USB/COM3)
+
+HARDWARE: Pixhawk 2.4.8 | F450 Quad | FlySky FS-IA6B | 3S 3300mAh
+
+INDOOR LAB SETTINGS:
+  - Max altitude: 1.5m (ceiling limit)
+  - Painting altitude: 1.0m
+  - Geofence: 3.0m radius
 
 Endpoints:
   GET  /               → Web UI

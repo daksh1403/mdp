@@ -1,20 +1,28 @@
 """
 ============================================================
  DroneController — Autonomous Drone Control via DroneKit
- VIT Chennai Multi-Disciplinary Project
+ VIT Chennai Multi-Disciplinary Project — Drone #3
 ============================================================
 
-Connects to Pixhawk V6X and provides:
+Connects to Pixhawk 2.4.8 (NOT V6X) and provides:
   - Arm and takeoff
   - GPS waypoint navigation
   - Safety monitoring (battery, altitude, geofence)
   - Grid cell to GPS coordinate conversion
 
-Connection modes:
+HARDWARE SPECS (Drone #3):
+  Flight Controller: Pixhawk 2.4.8
+  Frame:            F450 Quadcopter X-config
+  ESCs:             4x 30A Brushless
+  RC Receiver:      FlySky FS-IA6B (6-channel)
+  Battery:          Orange 3S 3300mAh 35C LiPo (11.1V)
+
+Connection modes for Pixhawk 2.4.8:
   SITL:    'tcp:127.0.0.1:5762'
   USB:     'COM3' (Windows) or '/dev/ttyACM0' (Linux)
-  ETH:     'udp:192.168.1.1:14550'
-  Radio:   'COM5' (Windows) or '/dev/ttyUSB0' (Linux)
+  TELEM:   'COM5' (Windows) or '/dev/ttyUSB0' (Linux)
+  
+NOTE: Pixhawk 2.4.8 has NO Ethernet port (unlike V6X)
 ============================================================
 """
 
@@ -34,34 +42,51 @@ import requests
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 
 # ══════════════════════════════════════════════════════════════
-#  Configuration — TUNE THESE FOR YOUR SETUP
+#  Configuration — TUNED FOR PIXHAWK 2.4.8 + INDOOR LAB TESTING
 # ══════════════════════════════════════════════════════════════
 
 # ESP32-CAM address for spray commands
 ESP32_CONTROL = "http://192.168.4.1"
 
-# Painting parameters
-PAINTING_ALTITUDE  = 3.0     # meters above ground
+# ────────────────────────────────────────────────────────────────
+#  INDOOR LAB SAFETY SETTINGS (Drone #3)
+#  ⚠️ CRITICAL: These are set for INDOOR TESTING at 1m altitude
+# ────────────────────────────────────────────────────────────────
+PAINTING_ALTITUDE  = 1.0     # meters — INDOOR LAB SAFE HEIGHT
 WALL_DISTANCE      = 0.5     # meters from wall to hover
 CELL_WIDTH_M       = 0.3     # real-world width of one grid cell
 CELL_HEIGHT_M      = 0.3     # real-world height of one grid cell
 SPRAY_DURATION_MS  = 800     # milliseconds per cell
-CONTINUOUS_SPEED   = 0.3     # m/s when doing continuous painting
+CONTINUOUS_SPEED   = 0.2     # m/s — SLOWER FOR INDOOR (was 0.3)
 GRID_COLS          = 12
 GRID_ROWS          = 8
 
-# Safety limits
-MAX_ALTITUDE       = 8.0     # meters — trigger RTL if exceeded
-MIN_BATTERY        = 15      # percent — trigger RTL if below
-MAX_DISTANCE       = 10.0    # meters from home — safety limit
+# ────────────────────────────────────────────────────────────────
+#  INDOOR LAB SAFETY LIMITS
+#  ⚠️ STRICT LIMITS FOR LAB ENVIRONMENT
+# ────────────────────────────────────────────────────────────────
+MAX_ALTITUDE       = 1.5     # meters — INDOOR LAB CEILING LIMIT (triggers RTL)
+MIN_BATTERY        = 20      # percent — RTL if below (increased for safety)
+MAX_DISTANCE       = 3.0     # meters from home — INDOOR GEOFENCE
 
-# Default connection string
-# Change this based on your connection:
-#   SITL:  'tcp:127.0.0.1:5762'
-#   USB:   'COM3' or '/dev/ttyACM0'
-#   ETH:   'udp:192.168.1.1:14550'
-#   Radio: 'COM5' or '/dev/ttyUSB0'
-CONNECTION_STRING = 'tcp:127.0.0.1:5762'
+# ────────────────────────────────────────────────────────────────
+#  PIXHAWK 2.4.8 CONNECTION SETTINGS
+# ────────────────────────────────────────────────────────────────
+# For USB connection (Micro USB cable):
+#   Windows: 'COM3' (check Device Manager for actual port)
+#   Linux:   '/dev/ttyACM0'
+#   Baud:    115200
+#
+# For TELEM port (telemetry radio):
+#   Windows: 'COM5'
+#   Linux:   '/dev/ttyUSB0'
+#   Baud:    57600
+#
+# For SITL simulation:
+#   'tcp:127.0.0.1:5762'
+# ────────────────────────────────────────────────────────────────
+CONNECTION_STRING = 'COM3'   # USB connection for Pixhawk 2.4.8
+BAUD_RATE = 115200           # USB baud rate (use 57600 for TELEM)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -80,11 +105,13 @@ class DroneController:
         self._safety_running = False
 
     def connect(self):
-        """Connect to Pixhawk via DroneKit."""
-        print(f"[Drone] Connecting to {self.connection_string}...")
+        """Connect to Pixhawk 2.4.8 via DroneKit."""
+        print(f"[Drone] Connecting to Pixhawk 2.4.8 at {self.connection_string}...")
+        print(f"[Drone] Baud rate: {BAUD_RATE}")
         try:
             self.vehicle = connect(
                 self.connection_string,
+                baud=BAUD_RATE,
                 wait_ready=True,
                 timeout=30
             )
@@ -147,8 +174,18 @@ class DroneController:
         return True, "Ready"
 
     def arm_and_takeoff(self, target_altitude):
-        """Arm the drone and take off to target_altitude (meters)."""
+        """Arm the drone and take off to target_altitude (meters).
+        
+        ⚠️ INDOOR LAB SAFETY: Max altitude is capped at MAX_ALTITUDE (1.5m)
+        """
+        # Cap altitude for indoor safety
+        if target_altitude > MAX_ALTITUDE:
+            print(f"[SAFETY] Requested altitude {target_altitude}m exceeds indoor limit!")
+            print(f"[SAFETY] Capping to MAX_ALTITUDE = {MAX_ALTITUDE}m")
+            target_altitude = MAX_ALTITUDE
+        
         print(f"[Drone] Arming and taking off to {target_altitude}m...")
+        print(f"[SAFETY] Indoor lab mode: MAX_ALT={MAX_ALTITUDE}m, GEOFENCE={MAX_DISTANCE}m")
 
         # Switch to GUIDED mode
         self.vehicle.mode = VehicleMode("GUIDED")
