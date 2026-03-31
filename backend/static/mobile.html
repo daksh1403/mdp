@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="PaintBot">
+<meta name="apple-mobile-web-app-title" content="PaintBot">
+<meta name="description" content="Autonomous Pattern Recognizing Painting System - Mobile Control App">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Icons -->
+<link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236366f1' rx='20' width='100' height='100'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>🎨</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236366f1' rx='20' width='100' height='100'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>🎨</text></svg>">
+
+<title>PaintBot - Mobile Control</title>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CSS VARIABLES & RESET
+   ═══════════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12131a;
+  --bg-card: #1a1b26;
+  --bg-elevated: #24253a;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: rgba(255,255,255,0.1);
+  --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  --radius: 16px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100%;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  background: var(--accent-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: var(--shadow);
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: pulse 2s ease infinite;
+}
+
+.status-dot.connected { background: var(--success); }
+.status-dot.connecting { background: var(--warning); animation: blink 0.5s ease infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CAMERA VIEW
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.camera-container {
+  position: relative;
+  flex: 1;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.camera-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.hud-tag {
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-tag.live { color: var(--danger); }
+.hud-tag.fps { color: var(--success); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATS BAR
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.stats-bar {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 8px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.stat {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  color: var(--accent-light);
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BOTTOM CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+/* Quick Actions Row */
+.quick-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action-btn:active {
+  transform: scale(0.96);
+  background: var(--bg-elevated);
+}
+
+.action-btn .icon {
+  font-size: 1.5rem;
+}
+
+.action-btn.capture { border-color: var(--info); }
+.action-btn.capture:active { background: rgba(59, 130, 246, 0.2); }
+
+.action-btn.detect { border-color: var(--accent); }
+.action-btn.detect:active { background: rgba(99, 102, 241, 0.2); }
+
+.action-btn.spray { border-color: var(--warning); }
+.action-btn.spray:active { background: rgba(245, 158, 11, 0.2); }
+
+.action-btn.stop { border-color: var(--danger); background: var(--danger); }
+.action-btn.stop:active { background: #dc2626; }
+
+/* Main Spray Button */
+.spray-control {
+  display: flex;
+  gap: 10px;
+}
+
+.spray-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s ease;
+}
+
+.spray-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+}
+
+.spray-btn:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+.spray-btn.spraying {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+  animation: spray-pulse 1s ease infinite;
+}
+
+@keyframes spray-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 4px 30px rgba(245, 158, 11, 0.6); }
+}
+
+.mode-selector {
+  display: flex;
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.mode-btn {
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BOTTOM SHEET / SETTINGS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 100;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-bottom: var(--safe-bottom);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--text-muted);
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sheet-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.sheet-close {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet-body {
+  padding: 20px;
+}
+
+/* Settings Controls */
+.setting-item {
+  margin-bottom: 20px;
+}
+
+.setting-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.setting-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.setting-value {
+  font-size: 0.85rem;
+  color: var(--accent-light);
+  font-family: 'SF Mono', monospace;
+}
+
+.slider-container {
+  position: relative;
+  height: 40px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.slider-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 12px;
+  transition: width 0.1s ease;
+}
+
+input[type="range"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* IP Input */
+.ip-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.ip-input {
+  flex: 1;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: 'SF Mono', monospace;
+}
+
+.ip-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.connect-btn {
+  padding: 14px 20px;
+  background: var(--success);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   OVERLAY BACKDROP
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 99;
+}
+
+.backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  top: calc(var(--safe-top) + 70px);
+  left: 16px;
+  right: 16px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  transform: translateY(-20px);
+  opacity: 0;
+  animation: toast-in 0.3s ease forwards;
+  pointer-events: auto;
+}
+
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--danger); }
+.toast.warning { border-left: 4px solid var(--warning); }
+.toast.info { border-left: 4px solid var(--info); }
+
+.toast-icon { font-size: 1.2rem; }
+.toast-message { flex: 1; font-size: 0.85rem; }
+
+@keyframes toast-in {
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toast-out {
+  to { transform: translateY(-20px); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOADING SPINNER
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LANDSCAPE ADJUSTMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (orientation: landscape) and (max-height: 500px) {
+  .header { padding: 8px 16px; }
+  .stats-bar { padding: 8px; }
+  .stat-value { font-size: 1.1rem; }
+  .controls { padding: 10px 16px; gap: 8px; }
+  .action-btn { padding: 10px 8px; }
+  .spray-btn { padding: 12px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DARK MODE FIXES FOR ANDROID WEBVIEW
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  input, button { color-scheme: dark; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">🎨</div>
+      <div>
+        <div class="title">PaintBot</div>
+        <div class="subtitle">Autonomous Painting</div>
+      </div>
+    </div>
+    <div class="connection-status" id="connStatus" onclick="openSettings()">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Offline</span>
+    </div>
+  </header>
+
+  <!-- Camera View -->
+  <div class="camera-container">
+    <img id="camera-feed" src="" alt="Camera Feed">
+    <canvas id="grid-overlay"></canvas>
+    <div class="camera-hud">
+      <div class="hud-tag live" id="liveTag">🔴 LIVE</div>
+      <div class="hud-tag fps" id="fpsTag">-- FPS</div>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value" id="totalCells">96</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="unpaintedCells">--</div>
+      <div class="stat-label">Unpainted</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="coveragePercent">--%</div>
+      <div class="stat-label">Coverage</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="sensitivity">50</div>
+      <div class="stat-label">Sensitivity</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="action-btn capture" onclick="captureFrame()">
+        <span class="icon">📸</span>
+        Capture
+      </button>
+      <button class="action-btn detect" onclick="detectPaint()">
+        <span class="icon">🔍</span>
+        Detect
+      </button>
+      <button class="action-btn spray" onclick="singleSpray()">
+        <span class="icon">💨</span>
+        Spray
+      </button>
+      <button class="action-btn" onclick="openSettings()">
+        <span class="icon">⚙️</span>
+        Settings
+      </button>
+    </div>
+
+    <!-- Main Spray Control -->
+    <div class="spray-control">
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="smart" onclick="setMode('smart')">Smart</button>
+        <button class="mode-btn" data-mode="precision" onclick="setMode('precision')">Precise</button>
+        <button class="mode-btn" data-mode="continuous" onclick="setMode('continuous')">Cont.</button>
+      </div>
+      <button class="spray-btn" id="mainSprayBtn" onclick="toggleSpraySequence()">
+        <span id="sprayBtnIcon">🎯</span>
+        <span id="sprayBtnText">Start Spray</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Bottom Sheet -->
+<div class="backdrop" id="backdrop" onclick="closeSettings()"></div>
+<div class="bottom-sheet" id="settingsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">⚙️ Settings</div>
+    <button class="sheet-close" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <!-- ESP32 Connection -->
+    <div class="setting-item">
+      <div class="setting-label">
+        <span class="setting-name">ESP32-CAM IP Address</span>
+      </div>
+      <div class="ip-input-group">
+        <input type="text" class="ip-input" id="espIpInput" placeholder="192.168.4.1" value="192.168.4.1">
+        <button class="connect-btn" onclick="connectToESP()">Connect</button>
+      </div>
+    </div>
+
+    <!-- Sensitivity -->
+    <div class="setting-item">
+      <div class="setting-label">
+        <span class="setting-name">Detection Sensitivity</span>
+        <span class="setting-value" id="sensitivityDisplay">50</span>
+      </div>
+      <div class="slider-container">
+        <div class="slider-track" id="sensitivityTrack" style="width: 50%"></div>
+        <input type="range" id="sensitivitySlider" min="0" max="100" value="50" oninput="updateSensitivity(this.value)">
+      </div>
+    </div>
+
+    <!-- Spray Duration -->
+    <div class="setting-item">
+      <div class="setting-label">
+        <span class="setting-name">Spray Duration (ms)</span>
+        <span class="setting-value" id="durationDisplay">800</span>
+      </div>
+      <div class="slider-container">
+        <div class="slider-track" id="durationTrack" style="width: 40%"></div>
+        <input type="range" id="durationSlider" min="200" max="2000" value="800" step="100" oninput="updateDuration(this.value)">
+      </div>
+    </div>
+
+    <!-- Backend Mode -->
+    <div class="setting-item">
+      <div class="setting-label">
+        <span class="setting-name">Connection Mode</span>
+      </div>
+      <div class="mode-selector" style="width: 100%;">
+        <button class="mode-btn active" data-conn="direct" onclick="setConnMode('direct')" style="flex:1;">Direct ESP32</button>
+        <button class="mode-btn" data-conn="backend" onclick="setConnMode('backend')" style="flex:1;">Via Backend</button>
+      </div>
+    </div>
+
+    <!-- Backend URL (shown when backend mode) -->
+    <div class="setting-item" id="backendUrlSetting" style="display:none;">
+      <div class="setting-label">
+        <span class="setting-name">Backend Server URL</span>
+      </div>
+      <input type="text" class="ip-input" id="backendUrlInput" placeholder="http://192.168.1.100:5000" value="" style="width:100%;">
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+const state = {
+  espIp: '192.168.4.1',
+  backendUrl: '',
+  connectionMode: 'direct', // 'direct' or 'backend'
+  connected: false,
+  spraying: false,
+  sprayMode: 'smart',
+  sensitivity: 50,
+  sprayDuration: 800,
+  grid: null,
+  unpaintedCells: [],
+  fps: 0,
+  lastFrameTime: 0
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DOM ELEMENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+
+const elements = {
+  cameraFeed: $('camera-feed'),
+  gridOverlay: $('grid-overlay'),
+  statusDot: $('statusDot'),
+  statusText: $('statusText'),
+  liveTag: $('liveTag'),
+  fpsTag: $('fpsTag'),
+  totalCells: $('totalCells'),
+  unpaintedCells: $('unpaintedCells'),
+  coveragePercent: $('coveragePercent'),
+  sensitivity: $('sensitivity'),
+  mainSprayBtn: $('mainSprayBtn'),
+  sprayBtnIcon: $('sprayBtnIcon'),
+  sprayBtnText: $('sprayBtnText'),
+  backdrop: $('backdrop'),
+  settingsSheet: $('settingsSheet'),
+  toastContainer: $('toastContainer')
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+function showToast(message, type = 'info', duration = 3000) {
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type]}</span>
+    <span class="toast-message">${message}</span>
+  `;
+  elements.toastContainer.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'toast-out 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONNECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+function getBaseUrl() {
+  if (state.connectionMode === 'direct') {
+    return `http://${state.espIp}`;
+  }
+  return state.backendUrl || window.location.origin;
+}
+
+async function connectToESP() {
+  state.espIp = $('espIpInput').value.trim();
+  elements.statusDot.className = 'status-dot connecting';
+  elements.statusText.textContent = 'Connecting...';
+  showToast('Connecting to ESP32-CAM...', 'info');
+  
+  try {
+    const response = await fetch(`http://${state.espIp}/ping`, { 
+      method: 'GET',
+      mode: 'cors',
+      timeout: 5000 
+    });
+    
+    if (response.ok) {
+      state.connected = true;
+      elements.statusDot.className = 'status-dot connected';
+      elements.statusText.textContent = 'Connected';
+      showToast('Connected to ESP32-CAM!', 'success');
+      startVideoStream();
+      closeSettings();
+    } else {
+      throw new Error('Connection failed');
+    }
+  } catch (error) {
+    state.connected = false;
+    elements.statusDot.className = 'status-dot';
+    elements.statusText.textContent = 'Offline';
+    showToast('Failed to connect. Check WiFi.', 'error');
+  }
+}
+
+function startVideoStream() {
+  if (state.connectionMode === 'direct') {
+    elements.cameraFeed.src = `http://${state.espIp}:81/stream`;
+  } else {
+    elements.cameraFeed.src = `${state.backendUrl}/video_feed`;
+  }
+  
+  elements.cameraFeed.onload = () => {
+    const now = Date.now();
+    if (state.lastFrameTime) {
+      state.fps = Math.round(1000 / (now - state.lastFrameTime));
+      elements.fpsTag.textContent = `${state.fps} FPS`;
+    }
+    state.lastFrameTime = now;
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CAPTURE & DETECT
+// ═══════════════════════════════════════════════════════════════════════════════
+async function captureFrame() {
+  if (!state.connected) {
+    showToast('Not connected to ESP32', 'warning');
+    return;
+  }
+  
+  showToast('Capturing frame...', 'info');
+  
+  try {
+    const url = state.connectionMode === 'direct' 
+      ? `http://${state.espIp}/capture_frame`
+      : `${state.backendUrl}/capture`;
+    
+    const response = await fetch(url, {
+      method: state.connectionMode === 'direct' ? 'GET' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: state.connectionMode === 'direct' ? null : JSON.stringify({ sensitivity: state.sensitivity })
+    });
+    
+    if (response.ok) {
+      showToast('Frame captured!', 'success');
+      if (state.connectionMode === 'backend') {
+        const data = await response.json();
+        if (data.success) {
+          updateDetectionResults(data);
+        }
+      }
+    }
+  } catch (error) {
+    showToast('Capture failed', 'error');
+  }
+}
+
+async function detectPaint() {
+  if (!state.connected) {
+    showToast('Not connected to ESP32', 'warning');
+    return;
+  }
+  
+  showToast('Detecting paint...', 'info');
+  
+  try {
+    const url = state.connectionMode === 'direct' 
+      ? `http://${state.espIp}/capture_frame`
+      : `${state.backendUrl}/capture`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sensitivity: state.sensitivity })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success !== false) {
+        updateDetectionResults(data);
+        showToast(`Found ${state.unpaintedCells.length} unpainted cells`, 'success');
+      }
+    }
+  } catch (error) {
+    showToast('Detection failed', 'error');
+  }
+}
+
+function updateDetectionResults(data) {
+  state.grid = data.grid || [];
+  state.unpaintedCells = data.unpainted_cells || [];
+  
+  const total = 96;
+  const unpainted = state.unpaintedCells.length;
+  const coverage = Math.round(((total - unpainted) / total) * 100);
+  
+  elements.unpaintedCells.textContent = unpainted;
+  elements.coveragePercent.textContent = `${coverage}%`;
+  
+  drawGrid();
+}
+
+function drawGrid() {
+  const canvas = elements.gridOverlay;
+  const ctx = canvas.getContext('2d');
+  const img = elements.cameraFeed;
+  
+  canvas.width = img.offsetWidth;
+  canvas.height = img.offsetHeight;
+  
+  const cellW = canvas.width / 12;
+  const cellH = canvas.height / 8;
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  
+  for (let r = 0; r <= 8; r++) {
+    ctx.beginPath();
+    ctx.moveTo(0, r * cellH);
+    ctx.lineTo(canvas.width, r * cellH);
+    ctx.stroke();
+  }
+  
+  for (let c = 0; c <= 12; c++) {
+    ctx.beginPath();
+    ctx.moveTo(c * cellW, 0);
+    ctx.lineTo(c * cellW, canvas.height);
+    ctx.stroke();
+  }
+  
+  // Highlight unpainted cells
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+  ctx.lineWidth = 2;
+  
+  state.unpaintedCells.forEach(cell => {
+    const x = cell.col * cellW;
+    const y = cell.row * cellH;
+    ctx.fillRect(x, y, cellW, cellH);
+    ctx.strokeRect(x, y, cellW, cellH);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRAY CONTROL
+// ═══════════════════════════════════════════════════════════════════════════════
+async function singleSpray() {
+  if (!state.connected) {
+    showToast('Not connected', 'warning');
+    return;
+  }
+  
+  showToast('Spraying...', 'info');
+  
+  try {
+    const url = state.connectionMode === 'direct'
+      ? `http://${state.espIp}/spray`
+      : `${state.backendUrl}/spray`;
+    
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ duration_ms: state.sprayDuration })
+    });
+    
+    showToast('Spray complete!', 'success');
+  } catch (error) {
+    showToast('Spray failed', 'error');
+  }
+}
+
+async function toggleSpraySequence() {
+  if (state.spraying) {
+    stopSpray();
+    return;
+  }
+  
+  if (state.unpaintedCells.length === 0) {
+    showToast('No unpainted cells detected', 'warning');
+    return;
+  }
+  
+  startSpraySequence();
+}
+
+async function startSpraySequence() {
+  state.spraying = true;
+  elements.mainSprayBtn.classList.add('spraying');
+  elements.sprayBtnIcon.textContent = '⏹️';
+  elements.sprayBtnText.textContent = 'Stop';
+  
+  showToast(`Starting ${state.sprayMode} spray...`, 'info');
+  
+  try {
+    const endpoint = state.sprayMode === 'smart' ? '/smart_spray_sequence' : '/spray_sequence';
+    const url = state.connectionMode === 'direct'
+      ? `http://${state.espIp}${endpoint}?cells=${encodeURIComponent(JSON.stringify(state.unpaintedCells))}`
+      : `${state.backendUrl}${endpoint}?cells=${encodeURIComponent(JSON.stringify(state.unpaintedCells))}`;
+    
+    const eventSource = new EventSource(url);
+    
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.event === 'complete') {
+        showToast('Spray sequence complete!', 'success');
+        stopSpray();
+        eventSource.close();
+      } else if (data.event === 'spraying') {
+        showToast(`Spraying cell (${data.row}, ${data.col})...`, 'info', 1000);
+      }
+    };
+    
+    eventSource.onerror = () => {
+      eventSource.close();
+      stopSpray();
+    };
+    
+  } catch (error) {
+    showToast('Spray sequence failed', 'error');
+    stopSpray();
+  }
+}
+
+function stopSpray() {
+  state.spraying = false;
+  elements.mainSprayBtn.classList.remove('spraying');
+  elements.sprayBtnIcon.textContent = '🎯';
+  elements.sprayBtnText.textContent = 'Start Spray';
+  
+  // Send stop command
+  fetch(`http://${state.espIp}/spray_stop`, { method: 'POST' }).catch(() => {});
+}
+
+function setMode(mode) {
+  state.sprayMode = mode;
+  $$('.mode-selector .mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  showToast(`Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`, 'info', 1500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════════
+function openSettings() {
+  elements.backdrop.classList.add('show');
+  elements.settingsSheet.classList.add('open');
+}
+
+function closeSettings() {
+  elements.backdrop.classList.remove('show');
+  elements.settingsSheet.classList.remove('open');
+}
+
+function updateSensitivity(value) {
+  state.sensitivity = parseInt(value);
+  $('sensitivityDisplay').textContent = value;
+  $('sensitivityTrack').style.width = `${value}%`;
+  elements.sensitivity.textContent = value;
+}
+
+function updateDuration(value) {
+  state.sprayDuration = parseInt(value);
+  $('durationDisplay').textContent = value;
+  $('durationTrack').style.width = `${((value - 200) / 1800) * 100}%`;
+}
+
+function setConnMode(mode) {
+  state.connectionMode = mode;
+  $$('[data-conn]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.conn === mode);
+  });
+  $('backendUrlSetting').style.display = mode === 'backend' ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Try to connect on load
+  setTimeout(connectToESP, 1000);
+  
+  // Prevent pull-to-refresh
+  document.body.addEventListener('touchmove', (e) => {
+    if (e.target === document.body) e.preventDefault();
+  }, { passive: false });
+  
+  // Handle visibility change
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.connected) {
+      startVideoStream();
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE WORKER REGISTRATION (PWA)
+// ═══════════════════════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+
+</body>
+</html>

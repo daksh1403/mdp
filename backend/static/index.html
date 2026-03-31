@@ -3,75 +3,291 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎨 Autonomous Painting System — Wall Painting Control</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>🎨 Autonomous Painting System — VIT Chennai</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════════════════════
-   RESET & ROOT VARIABLES
+   ULTRA-PREMIUM AUTONOMOUS PAINTING SYSTEM UI
+   Version 3.0 — Next-Level Industrial Control Panel
    ═══════════════════════════════════════════════════════════════════════════════ */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12131a;
-  --bg-card: #1a1b26;
-  --bg-elevated: #24253a;
-  --accent-primary: #6366f1;
-  --accent-secondary: #8b5cf6;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  --success: #10b981;
-  --success-glow: rgba(16, 185, 129, 0.4);
-  --warning: #f59e0b;
-  --warning-glow: rgba(245, 158, 11, 0.4);
-  --danger: #ef4444;
-  --danger-glow: rgba(239, 68, 68, 0.4);
-  --info: #3b82f6;
+  /* Premium Dark Theme with Purple/Indigo Accents */
+  --bg-void: #050508;
+  --bg-primary: #0a0b10;
+  --bg-secondary: #0f1015;
+  --bg-card: rgba(15, 16, 25, 0.6);
+  --bg-elevated: rgba(25, 26, 40, 0.8);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  
+  /* Accent Gradient System */
+  --accent-primary: #7c3aed;
+  --accent-secondary: #a855f7;
+  --accent-tertiary: #c084fc;
+  --accent-glow: rgba(124, 58, 237, 0.5);
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 35%, #a855f7 70%, #c084fc 100%);
+  --accent-gradient-vibrant: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --neon-purple: #bf5af2;
+  --neon-blue: #5e5ce6;
+  --neon-cyan: #64d2ff;
+  
+  /* Status Colors */
+  --success: #34d399;
+  --success-dark: #059669;
+  --success-glow: rgba(52, 211, 153, 0.4);
+  --warning: #fbbf24;
+  --warning-dark: #d97706;
+  --warning-glow: rgba(251, 191, 36, 0.4);
+  --danger: #f87171;
+  --danger-dark: #dc2626;
+  --danger-glow: rgba(248, 113, 113, 0.5);
+  --info: #60a5fa;
+  --info-glow: rgba(96, 165, 250, 0.4);
+  
+  /* Text */
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: rgba(255,255,255,0.08);
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-glow: rgba(248, 250, 252, 0.8);
+  
+  /* Borders & Effects */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(124, 58, 237, 0.3);
+  
+  /* Neumorphic Shadows */
+  --shadow-inset: inset 4px 4px 8px rgba(0,0,0,0.4), inset -4px -4px 8px rgba(255,255,255,0.03);
+  --shadow-outset: 8px 8px 24px rgba(0,0,0,0.5), -4px -4px 16px rgba(255,255,255,0.02);
+  --shadow-glow: 0 0 40px var(--accent-glow);
+  
+  /* Spacing */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
+::-webkit-scrollbar-thumb { 
+  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary)); 
+  border-radius: 4px;
+  border: 2px solid var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-tertiary); }
+
+html { scroll-behavior: smooth; }
+
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-void);
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  line-height: 1.6;
 }
-
-/* Animated background grid */
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  background-image: 
-    linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.bg-glow {
-  position: fixed;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  filter: blur(150px);
-  opacity: 0.12;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.bg-glow-1 { background: var(--accent-primary); top: -200px; left: -200px; }
-.bg-glow-2 { background: var(--accent-secondary); bottom: -200px; right: -200px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LAYOUT
+   ANIMATED BACKGROUND SYSTEM
    ═══════════════════════════════════════════════════════════════════════════════ */
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Multi-layer Animated Gradient */
+.bg-gradient {
+  background: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.1), transparent),
+    radial-gradient(ellipse 50% 30% at 0% 80%, rgba(99, 102, 241, 0.08), transparent),
+    var(--bg-void);
+  animation: gradientShift 20s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(15deg) brightness(1.05); }
+}
+
+/* Floating Particles */
+.particles {
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: floatParticle linear infinite;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+@keyframes floatParticle {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.4; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Grid Overlay */
+.bg-grid-overlay {
+  background-image: 
+    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridPulse 4s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+/* Ambient Glow Orbs */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: orbFloat 15s ease-in-out infinite;
+}
+
+.glow-orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, var(--accent-primary), transparent 70%);
+  top: -150px; left: -100px;
+  animation-delay: 0s;
+}
+
+.glow-orb-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, var(--neon-blue), transparent 70%);
+  bottom: -100px; right: -50px;
+  animation-delay: -5s;
+}
+
+.glow-orb-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, var(--neon-cyan), transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -10s;
+  opacity: 0.2;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -20px) scale(1.05); }
+  50% { transform: translate(-20px, 30px) scale(0.95); }
+  75% { transform: translate(20px, 20px) scale(1.02); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-smooth);
+}
+
+.glass-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: 
+    0 12px 48px rgba(0, 0, 0, 0.4),
+    0 0 30px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NEUMORPHIC ELEMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.neu-inset {
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-inset);
+  border-radius: var(--radius-md);
+}
+
+.neu-outset {
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-outset);
+  border-radius: var(--radius-md);
+}
+
+.neu-button {
+  background: linear-gradient(145deg, rgba(30, 31, 48, 0.9), rgba(20, 21, 35, 0.9));
+  box-shadow: 
+    6px 6px 16px rgba(0, 0, 0, 0.5),
+    -3px -3px 12px rgba(255, 255, 255, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-smooth);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.neu-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-gradient);
+  opacity: 0;
+  transition: opacity var(--transition-smooth);
+}
+
+.neu-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    8px 8px 24px rgba(0, 0, 0, 0.6),
+    -4px -4px 16px rgba(255, 255, 255, 0.04),
+    0 0 30px var(--accent-glow);
+}
+
+.neu-button:hover::before { opacity: 0.15; }
+
+.neu-button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-inset);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   APP LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .app-container {
   position: relative;
   z-index: 1;
@@ -86,90 +302,382 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 32px;
-  background: rgba(18, 19, 26, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(10, 11, 16, 0.8);
+  backdrop-filter: blur(30px);
+  border-bottom: 1px solid var(--border-glass);
   position: sticky;
   top: 0;
   z-index: 100;
+  animation: slideDown 0.6s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .logo-icon {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   background: var(--accent-gradient);
-  border-radius: var(--radius-md);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  font-size: 26px;
+  box-shadow: 0 4px 20px var(--accent-glow);
+  animation: logoPulse 3s ease-in-out infinite;
+  position: relative;
+}
+
+.logo-icon::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: var(--accent-gradient);
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0.4;
+  filter: blur(8px);
+  animation: logoGlow 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.05) rotate(2deg); }
+}
+
+@keyframes logoGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
 }
 
 .logo-text h1 {
-  font-size: 1.35rem;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
   font-weight: 700;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-.logo-text span {
-  font-size: 0.7rem;
-  color: var(--text-muted);
+  letter-spacing: 1px;
   text-transform: uppercase;
-  letter-spacing: 2px;
 }
 
-/* Status badges in header */
-.status-badges {
-  display: flex;
-  gap: 14px;
+.logo-text p {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
-.badge {
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  background: var(--bg-card);
+  gap: 16px;
+}
+
+/* Status Badges */
+.status-badges {
+  display: flex;
+  gap: 12px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
   border-radius: 100px;
-  font-size: 0.8rem;
+  font-size: 12px;
   font-weight: 500;
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  transition: all var(--transition-smooth);
 }
 
-.badge-dot {
-  width: 10px;
-  height: 10px;
+.status-badge .indicator {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--danger);
-  box-shadow: 0 0 10px var(--danger-glow);
-  animation: pulse 2s ease-in-out infinite;
+  position: relative;
 }
 
-.badge.connected .badge-dot {
+.status-badge .indicator::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-badge.online .indicator {
   background: var(--success);
   box-shadow: 0 0 10px var(--success-glow);
 }
 
-.badge.spraying .badge-dot {
-  background: var(--warning);
-  box-shadow: 0 0 10px var(--warning-glow);
-  animation: blink 0.5s ease-in-out infinite;
+.status-badge.online .indicator::after {
+  background: var(--success);
+  opacity: 0.4;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.9); }
+.status-badge.offline .indicator {
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger-glow);
+}
+
+.status-badge.offline .indicator::after {
+  background: var(--danger);
+  opacity: 0.4;
+}
+
+.status-badge.warning .indicator {
+  background: var(--warning);
+  box-shadow: 0 0 10px var(--warning-glow);
+}
+
+@keyframes statusPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.8); opacity: 0; }
+}
+
+/* Sound Toggle */
+.sound-toggle {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all var(--transition-smooth);
+}
+
+.sound-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.sound-toggle.active {
+  color: var(--accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT GRID
+   ════════════════════��══════════════════════════════════════════════════════════ */
+
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  grid-template-rows: 1fr auto;
+  gap: 24px;
+  padding: 24px 32px;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Camera Section */
+.camera-section {
+  grid-row: span 2;
+  animation: fadeInUp 0.6s ease-out 0.1s both;
+}
+
+@keyframes fadeInUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+}
+
+.section-title .icon {
+  font-size: 18px;
+}
+
+.camera-container {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.camera-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #000;
+  overflow: hidden;
+}
+
+.camera-frame video,
+.camera-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Detection Grid Overlay */
+.detection-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  pointer-events: all;
+}
+
+.grid-cell {
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.grid-cell::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 2px;
+  transition: all var(--transition-smooth);
+}
+
+.grid-cell:hover {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.4);
+}
+
+.grid-cell.unpainted {
+  animation: cellDetected 0.5s ease-out;
+}
+
+.grid-cell.unpainted::before {
+  background: rgba(239, 68, 68, 0.3);
+  box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+.grid-cell.selected {
+  background: rgba(124, 58, 237, 0.25);
+  border-color: var(--accent-primary);
+}
+
+.grid-cell.selected::before {
+  background: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.grid-cell.sprayed::before {
+  background: rgba(52, 211, 153, 0.3);
+  box-shadow: inset 0 0 15px rgba(52, 211, 153, 0.5);
+}
+
+/* Active spray states */
+.grid-cell.moving::before {
+  background: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 25px var(--warning-glow);
+  animation: movingPulse 0.5s ease-in-out infinite;
+}
+
+.grid-cell.spraying::before {
+  background: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 0 30px var(--info-glow), inset 0 0 20px rgba(96, 165, 250, 0.5);
+  animation: sprayingGlow 0.3s ease-in-out infinite;
+}
+
+@keyframes movingPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes sprayingGlow {
+  0%, 100% { box-shadow: 0 0 30px var(--info-glow), inset 0 0 20px rgba(96, 165, 250, 0.5); }
+  50% { box-shadow: 0 0 50px var(--info-glow), inset 0 0 30px rgba(96, 165, 250, 0.8); }
+}
+
+@keyframes cellDetected {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Camera Overlay Elements */
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.corner-bracket {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: var(--accent-primary);
+  border-style: solid;
+  opacity: 0.6;
+}
+
+.corner-bracket.tl { top: 10px; left: 10px; border-width: 3px 0 0 3px; }
+.corner-bracket.tr { top: 10px; right: 10px; border-width: 3px 3px 0 0; }
+.corner-bracket.bl { bottom: 10px; left: 10px; border-width: 0 0 3px 3px; }
+.corner-bracket.br { bottom: 10px; right: 10px; border-width: 0 3px 3px 0; }
+
+.camera-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 20px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.camera-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.camera-info-item .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: blink 1s infinite;
 }
 
 @keyframes blink {
@@ -177,191 +685,58 @@ body {
   50% { opacity: 0.3; }
 }
 
-/* Main grid layout */
-.main-content {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 28px;
-  padding: 28px;
-  max-width: 1500px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-@media (max-width: 1200px) {
-  .main-content { grid-template-columns: 1fr; }
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════════
-   CARDS
+   CONTROL PANEL
    ═══════════════════════════════════════════════════════════════════════════════ */
-.card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
 
-.card:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--border-color);
-  background: rgba(36, 37, 58, 0.3);
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.card-title-icon {
-  width: 36px;
-  height: 36px;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-}
-
-.card-body {
-  padding: 22px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CAMERA VIEW
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.view-container {
-  position: relative;
-  aspect-ratio: 4/3;
-  background: var(--bg-secondary);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-}
-
-#camera-feed {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-#grid-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  cursor: crosshair;
-}
-
-#captured-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: none;
-}
-
-/* Overlay status */
-.view-overlay {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.overlay-tag {
-  padding: 6px 14px;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(10px);
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.overlay-tag.live { border-left: 3px solid var(--danger); }
-.overlay-tag.captured { border-left: 3px solid var(--info); }
-
-/* View toggle buttons */
-.view-toggle {
-  display: flex;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-sm);
-  padding: 4px;
-}
-
-.toggle-btn {
-  padding: 10px 18px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.toggle-btn.active {
-  background: var(--accent-primary);
-  color: white;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
-}
-
-.toggle-btn:hover:not(.active) {
-  background: rgba(255,255,255,0.05);
-  color: var(--text-primary);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CONTROL PANEL (RIGHT SIDEBAR)
-   ═══════════════════════════════════════════════════════════════════════════════ */
 .control-panel {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  animation: fadeInUp 0.6s ease-out 0.2s both;
 }
 
-/* Stats grid */
+/* Stats Dashboard */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
 
-.stat-box {
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  padding: 18px;
+.stat-card {
+  padding: 16px;
   text-align: center;
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.stat-box:hover {
-  transform: translateY(-2px);
-  border-color: rgba(99, 102, 241, 0.3);
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-smooth);
+}
+
+.stat-card:hover::before {
+  transform: scaleX(1);
+}
+
+.stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  display: block;
 }
 
 .stat-value {
-  font-size: 1.8rem;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
   font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -369,188 +744,16 @@ body {
 }
 
 .stat-label {
-  font-size: 0.7rem;
+  font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
-/* Buttons */
-.btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px 24px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: var(--accent-gradient);
-  color: white;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-}
-
-.btn-success {
-  background: var(--success);
-  color: white;
-  box-shadow: 0 4px 15px var(--success-glow);
-}
-
-.btn-success:hover:not(:disabled) {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: white;
-  box-shadow: 0 4px 15px var(--danger-glow);
-}
-
-.btn-danger:hover:not(:disabled) {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-}
-
-.btn-warning {
-  background: var(--warning);
-  color: #1a1a1a;
-  box-shadow: 0 4px 15px var(--warning-glow);
-}
-
-.btn-warning:hover:not(:disabled) {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 2px solid var(--border-color);
-  color: var(--text-secondary);
-}
-
-.btn-outline:hover:not(:disabled) {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.1);
-}
-
-/* Button groups */
-.btn-group {
-  display: flex;
-  gap: 12px;
-}
-
-.btn-group .btn {
-  flex: 1;
-}
-
-/* Spray controls section */
-.spray-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.spray-mode-selector {
-  display: flex;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  padding: 6px;
-}
-
-.spray-mode-btn {
-  flex: 1;
-  padding: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
-}
-
-.spray-mode-btn.active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.spray-mode-btn:hover:not(.active) {
-  color: var(--text-primary);
-}
-
-/* Duration input */
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.input-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.input-row {
-  display: flex;
-  gap: 10px;
-}
-
-.input-field {
-  flex: 1;
-  padding: 12px 16px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-.input-field:focus {
-  border-color: var(--accent-primary);
-}
-
-.input-suffix {
-  padding: 12px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-/* Progress bar */
-.progress-container {
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  padding: 18px;
-  border: 1px solid var(--border-color);
+/* Progress Section */
+.progress-section {
+  padding: 20px;
 }
 
 .progress-header {
@@ -561,1288 +764,1579 @@ body {
 }
 
 .progress-title {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
 }
 
-.progress-percent {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  color: var(--accent-primary);
+.progress-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-tertiary);
 }
 
 .progress-bar {
-  height: 8px;
+  height: 10px;
   background: var(--bg-secondary);
   border-radius: 100px;
   overflow: hidden;
+  box-shadow: var(--shadow-inset);
+  position: relative;
 }
 
 .progress-fill {
   height: 100%;
   background: var(--accent-gradient);
   border-radius: 100px;
-  transition: width 0.3s ease;
   width: 0%;
+  transition: width 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
 }
 
-.progress-stats {
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Spray Controls */
+.spray-controls {
+  padding: 20px;
+}
+
+.mode-toggle {
   display: flex;
-  justify-content: space-between;
-  margin-top: 12px;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-/* Console/Log */
-.console {
-  background: #0d0d12;
+  background: var(--bg-secondary);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  max-height: 200px;
-  overflow-y: auto;
+  padding: 4px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-inset);
 }
 
-.console-header {
-  padding: 12px 16px;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.console-title {
-  font-size: 0.75rem;
+.mode-btn {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-smooth);
 }
 
-.console-body {
-  padding: 12px 16px;
-  max-height: 150px;
-  overflow-y: auto;
+.mode-btn.active {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 4px 15px var(--accent-glow);
 }
 
-.log-entry {
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-  display: flex;
-  gap: 10px;
+.mode-btn:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.log-time {
-  color: var(--text-muted);
-}
-
-.log-msg { color: var(--text-secondary); }
-.log-msg.success { color: var(--success); }
-.log-msg.error { color: var(--danger); }
-.log-msg.warning { color: var(--warning); }
-.log-msg.info { color: var(--info); }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   MISSION PANEL
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.mission-steps {
-  display: flex;
-  flex-direction: column;
+.spray-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
-.mission-step {
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  cursor: pointer;
+  border: none;
+}
+
+.action-btn .btn-icon {
+  font-size: 28px;
+  transition: transform var(--transition-bounce);
+}
+
+.action-btn:hover .btn-icon {
+  transform: scale(1.2);
+}
+
+.action-btn.primary {
+  grid-column: span 2;
+  background: var(--accent-gradient);
+  box-shadow: 0 8px 30px var(--accent-glow);
+  border: none;
+}
+
+.action-btn.primary:hover {
+  box-shadow: 0 12px 40px var(--accent-glow);
+}
+
+.action-btn.danger {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.2));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.action-btn.danger:hover {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.3), rgba(185, 28, 28, 0.3));
+  box-shadow: 0 0 30px var(--danger-glow);
+}
+
+.action-btn.success {
+  background: linear-gradient(145deg, rgba(52, 211, 153, 0.2), rgba(5, 150, 105, 0.2));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.action-btn.success:hover {
+  background: linear-gradient(145deg, rgba(52, 211, 153, 0.3), rgba(5, 150, 105, 0.3));
+  box-shadow: 0 0 30px var(--success-glow);
+}
+
+/* Spray Active Animation */
+.action-btn.spray-active {
+  animation: sprayPulse 1s ease-in-out infinite;
+}
+
+@keyframes sprayPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+  50% { box-shadow: 0 0 40px var(--accent-glow), 0 0 60px var(--accent-glow); }
+}
+
+/* Mission Control */
+.mission-control {
+  padding: 20px;
+}
+
+.mission-title {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.mission-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mission-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 14px 18px;
-  background: var(--bg-elevated);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
 }
 
-.mission-step.active {
-  border-color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.1);
+.mission-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-glow);
+  transform: translateX(4px);
 }
 
-.mission-step.completed {
-  border-color: var(--success);
-  background: rgba(16, 185, 129, 0.1);
+.mission-btn .emoji {
+  font-size: 18px;
 }
 
-.step-number {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-card);
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTIVITY LOG / CONSOLE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.log-section {
+  grid-column: span 2;
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+.log-container {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  animation: logSlide 0.3s ease-out;
+}
+
+@keyframes logSlide {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.log-entry:last-child { border-bottom: none; }
+
+.log-time {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.log-type {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.log-type.info { background: rgba(96, 165, 250, 0.2); color: var(--info); }
+.log-type.success { background: rgba(52, 211, 153, 0.2); color: var(--success); }
+.log-type.warning { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+.log-type.error { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+.log-type.spray { background: rgba(124, 58, 237, 0.2); color: var(--accent-tertiary); }
+
+.log-message {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.fab-container {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 200;
+}
+
+.fab {
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border: 2px solid var(--border-color);
+  font-size: 24px;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-bounce);
+  position: relative;
 }
 
-.mission-step.active .step-number {
-  border-color: var(--accent-primary);
-  background: var(--accent-primary);
-  color: white;
+.fab::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.3;
+  filter: blur(10px);
+  z-index: -1;
 }
 
-.mission-step.completed .step-number {
-  border-color: var(--success);
-  background: var(--success);
-  color: white;
+.fab:hover {
+  transform: scale(1.15) rotate(10deg);
 }
 
-.step-info {
-  flex: 1;
+.fab.capture {
+  background: var(--accent-gradient);
+  box-shadow: 0 8px 30px var(--accent-glow);
 }
 
-.step-title {
-  font-size: 0.9rem;
+.fab.emergency {
+  background: linear-gradient(145deg, var(--danger), var(--danger-dark));
+  box-shadow: 0 8px 30px var(--danger-glow);
+}
+
+.fab-tooltip {
+  position: absolute;
+  right: 75px;
+  background: var(--bg-elevated);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
   font-weight: 500;
-  margin-bottom: 2px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all var(--transition-smooth);
+  pointer-events: none;
+  border: 1px solid var(--border-glass);
 }
 
-.step-desc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.fab:hover .fab-tooltip {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   MODAL
+   TOAST NOTIFICATIONS
    ═══════════════════════════════════════════════════════════════════════════════ */
+
+.toast-container {
+  position: fixed;
+  top: 100px;
+  right: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 300;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  animation: toastSlide 0.4s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes toastSlide {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.hiding {
+  animation: toastHide 0.3s ease-in forwards;
+}
+
+@keyframes toastHide {
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+.toast-icon { font-size: 20px; }
+.toast-message { font-size: 13px; font-weight: 500; }
+
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--danger); }
+.toast.warning { border-left: 4px solid var(--warning); }
+.toast.info { border-left: 4px solid var(--info); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EMERGENCY STOP MODAL
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-smooth);
 }
 
-.modal-overlay.show {
-  display: flex;
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
 }
 
 .modal {
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  max-width: 450px;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform var(--transition-bounce);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
 }
 
-.modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.modal-overlay.active .modal {
+  transform: scale(1);
 }
 
-.modal-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+.modal-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: shake 0.5s ease-in-out infinite;
 }
 
-.modal-close {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-elevated);
-  border: none;
-  border-radius: var(--radius-sm);
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.modal h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: var(--danger);
+}
+
+.modal p {
   color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.2rem;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.modal-actions {
   display: flex;
-  align-items: center;
+  gap: 16px;
   justify-content: center;
-  transition: all 0.2s ease;
 }
 
-.modal-close:hover {
-  background: var(--danger);
+.modal-btn {
+  padding: 14px 32px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-smooth);
+}
+
+.modal-btn.confirm {
+  background: linear-gradient(145deg, var(--danger), var(--danger-dark));
   color: white;
+  box-shadow: 0 4px 20px var(--danger-glow);
 }
 
-.modal-body {
-  padding: 24px;
+.modal-btn.confirm:hover {
+  box-shadow: 0 8px 30px var(--danger-glow);
+  transform: translateY(-2px);
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+.modal-btn.cancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-glass);
+}
+
+.modal-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FOOTER
+   KEYBOARD SHORTCUTS HINT
    ═══════════════════════════════════════════════════════════════════════════════ */
-.footer {
-  padding: 16px 32px;
-  background: rgba(18, 19, 26, 0.8);
-  border-top: 1px solid var(--border-color);
+
+.shortcuts-hint {
+  position: fixed;
+  bottom: 32px;
+  left: 32px;
   display: flex;
-  justify-content: space-between;
+  gap: 16px;
+  z-index: 50;
+}
+
+.shortcut {
+  display: flex;
   align-items: center;
-  font-size: 0.75rem;
+  gap: 8px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
-.footer-links {
+.shortcut kbd {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOADING STATES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-elevated) 50%, var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeletonPulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 1fr 340px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  
+  .camera-section {
+    grid-row: 1;
+  }
+  
+  .control-panel {
+    grid-row: 2;
+  }
+  
+  .log-section {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .logo-text h1 {
+    font-size: 16px;
+  }
+  
+  .status-badges {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .main-content {
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .stat-card {
+    padding: 12px 8px;
+  }
+  
+  .stat-value {
+    font-size: 20px;
+  }
+  
+  .spray-actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .action-btn {
+    padding: 14px 10px;
+  }
+  
+  .action-btn.primary {
+    grid-column: span 4;
+  }
+  
+  .fab-container {
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .fab {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .shortcuts-hint {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIT CHENNAI BRANDING
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.branding {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  z-index: 10;
 }
 
-.footer-links a {
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.2s ease;
+.branding-badge {
+  padding: 6px 14px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 100px;
+  font-weight: 600;
+  color: var(--accent-tertiary);
+  letter-spacing: 1px;
 }
 
-.footer-links a:hover {
-  color: var(--accent-primary);
+@media (max-width: 768px) {
+  .branding {
+    bottom: auto;
+    top: auto;
+    position: relative;
+    margin-top: 20px;
+    padding-bottom: 80px;
+  }
 }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SCROLLBAR
-   ═══════════════════════════════════════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
-::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ANIMATIONS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card { animation: fadeIn 0.4s ease forwards; }
-.card:nth-child(2) { animation-delay: 0.1s; }
-.card:nth-child(3) { animation-delay: 0.2s; }
-
-@keyframes spray-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--warning-glow); }
-  50% { box-shadow: 0 0 0 20px transparent; }
-}
-
-.spraying { animation: spray-pulse 1s ease-in-out infinite; }
 </style>
 </head>
 <body>
-<!-- Animated Background -->
-<div class="bg-grid"></div>
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
 
+<!-- Background Layers -->
+<div class="bg-layer bg-gradient"></div>
+<div class="bg-layer bg-grid-overlay"></div>
+<div class="bg-layer particles" id="particles"></div>
+<div class="bg-layer">
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+  <div class="glow-orb glow-orb-3"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Emergency Stop Modal -->
+<div class="modal-overlay" id="emergencyModal">
+  <div class="modal">
+    <div class="modal-icon">🚨</div>
+    <h2>EMERGENCY STOP</h2>
+    <p>This will immediately stop all spray operations and reset the system. Are you sure you want to proceed?</p>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeEmergencyModal()">Cancel</button>
+      <button class="modal-btn confirm" onclick="confirmEmergencyStop()">STOP ALL</button>
+    </div>
+  </div>
+</div>
+
+<!-- App Container -->
 <div class="app-container">
+  
   <!-- Header -->
   <header class="header">
     <div class="logo">
       <div class="logo-icon">🎨</div>
       <div class="logo-text">
-        <h1>Autonomous Painting System</h1>
-        <span>VIT Chennai MDP</span>
+        <h1>Autonomous Painting</h1>
+        <p>Industrial Control System</p>
       </div>
     </div>
-    <div class="status-badges">
-      <div class="badge" id="esp-status">
-        <div class="badge-dot"></div>
-        <span>ESP32-CAM</span>
+    
+    <div class="header-actions">
+      <div class="status-badges">
+        <div class="status-badge" id="espStatus">
+          <span class="indicator"></span>
+          <span>ESP32</span>
+        </div>
+        <div class="status-badge" id="sprayStatus">
+          <span class="indicator"></span>
+          <span>Spray System</span>
+        </div>
       </div>
-      <div class="badge" id="spray-status">
-        <div class="badge-dot"></div>
-        <span>Spray System</span>
+      <div class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="Toggle UI Sounds">
+        🔊
       </div>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="main-content">
-    <!-- Left Column - Camera & Grid -->
-    <div class="camera-section">
-      <!-- Camera Card -->
-      <div class="card camera-card">
-        <div class="card-header">
-          <div class="card-title">
-            <div class="card-title-icon">📷</div>
-            <span>Wall View</span>
-          </div>
-          <div class="view-toggle">
-            <button class="toggle-btn active" id="btn-live">Live</button>
-            <button class="toggle-btn" id="btn-analysis">Analysis</button>
-          </div>
+    
+    <!-- Camera Section -->
+    <section class="camera-section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="icon">📹</span>
+          Live Camera Feed
         </div>
-        <div class="view-container">
-          <img id="camera-feed" src="/camera_proxy" alt="Camera Feed" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 480%22%3E%3Crect fill=%22%231a1b26%22 width=%22640%22 height=%22480%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2364748b%22 text-anchor=%22middle%22 font-family=%22Inter%22 font-size=%2220%22%3E📷 Connecting to ESP32-CAM...%3C/text%3E%3C/svg%3E'">
-          <img id="captured-image" src="" alt="Captured Frame">
-          <canvas id="grid-canvas"></canvas>
-          <div class="view-overlay">
-            <div class="overlay-tag live" id="overlay-live">
-              <span>🔴</span> LIVE
+        <div class="camera-resolution" style="font-size: 11px; color: var(--text-muted);">
+          ESP32-CAM • 640×480
+        </div>
+      </div>
+      
+      <div class="camera-container glass-card">
+        <div class="camera-frame">
+          <img id="videoFeed" src="/video_feed" alt="ESP32-CAM Feed" onerror="this.style.display='none'">
+          
+          <!-- Detection Grid Overlay -->
+          <div class="detection-grid" id="detectionGrid"></div>
+          
+          <!-- Camera Overlay -->
+          <div class="camera-overlay">
+            <div class="corner-bracket tl"></div>
+            <div class="corner-bracket tr"></div>
+            <div class="corner-bracket bl"></div>
+            <div class="corner-bracket br"></div>
+          </div>
+          
+          <!-- Camera Info -->
+          <div class="camera-info">
+            <div class="camera-info-item">
+              <span class="dot"></span>
+              <span>LIVE</span>
             </div>
-            <div class="overlay-tag captured" id="overlay-captured" style="display:none;">
-              <span>📸</span> CAPTURED
+            <div class="camera-info-item" id="gridInfo">
+              Grid: 8×12 • Selected: 0
+            </div>
+            <div class="camera-info-item" id="timestamp">
+              --:--:--
             </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- Action Buttons -->
-      <div class="card">
-        <div class="card-body">
-          <div class="btn-group">
-            <button class="btn btn-primary" id="btn-capture">
-              📸 Capture & Analyze
-            </button>
-            <button class="btn btn-outline" id="btn-select-all">
-              ☑️ Select All
-            </button>
-            <button class="btn btn-outline" id="btn-clear">
-              🗑️ Clear
-            </button>
-          </div>
+    <!-- Control Panel -->
+    <aside class="control-panel">
+      
+      <!-- Statistics Dashboard -->
+      <div class="section-header">
+        <div class="section-title">
+          <span class="icon">📊</span>
+          Statistics
         </div>
       </div>
-
-      <!-- Mission Progress -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <div class="card-title-icon">🎯</div>
-            <span>Mission Progress</span>
-          </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card glass-card">
+          <span class="stat-icon">🎯</span>
+          <div class="stat-value" id="statTotal">96</div>
+          <div class="stat-label">Total Cells</div>
         </div>
-        <div class="card-body">
-          <div class="progress-container">
-            <div class="progress-header">
-              <span class="progress-title">Painting Progress</span>
-              <span class="progress-percent" id="progress-percent">0%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <div class="progress-stats">
-              <span id="cells-painted">0 cells painted</span>
-              <span id="cells-remaining">0 remaining</span>
-            </div>
-          </div>
+        <div class="stat-card glass-card">
+          <span class="stat-icon">⚠️</span>
+          <div class="stat-value" id="statUnpainted">0</div>
+          <div class="stat-label">Unpainted</div>
+        </div>
+        <div class="stat-card glass-card">
+          <span class="stat-icon">✅</span>
+          <div class="stat-value" id="statSelected">0</div>
+          <div class="stat-label">Selected</div>
+        </div>
+        <div class="stat-card glass-card">
+          <span class="stat-icon">💨</span>
+          <div class="stat-value" id="statSprayed">0</div>
+          <div class="stat-label">Sprayed</div>
         </div>
       </div>
-    </div>
-
-    <!-- Right Column - Control Panel -->
-    <div class="control-panel">
-      <!-- Statistics -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <div class="card-title-icon">📊</div>
-            <span>Statistics</span>
-          </div>
+      
+      <!-- Progress Section -->
+      <div class="progress-section glass-card">
+        <div class="progress-header">
+          <span class="progress-title">Painting Progress</span>
+          <span class="progress-value" id="progressValue">0%</span>
         </div>
-        <div class="card-body">
-          <div class="stats-grid">
-            <div class="stat-box">
-              <div class="stat-value" id="stat-total">96</div>
-              <div class="stat-label">Total Cells</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-value" id="stat-unpainted">0</div>
-              <div class="stat-label">Unpainted</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-value" id="stat-selected">0</div>
-              <div class="stat-label">Selected</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-value" id="stat-sprayed">0</div>
-              <div class="stat-label">Sprayed</div>
-            </div>
-          </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
         </div>
       </div>
-
+      
       <!-- Spray Controls -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <div class="card-title-icon">💨</div>
-            <span>Spray Controls</span>
-          </div>
+      <div class="spray-controls glass-card">
+        <div class="section-title" style="margin-bottom: 16px;">
+          <span class="icon">🎛️</span>
+          Spray Controls
         </div>
-        <div class="card-body">
-          <div class="spray-controls">
-            <!-- Spray Mode Selector -->
-            <div class="spray-mode-selector">
-              <button class="spray-mode-btn active" id="mode-precision">⏱️ Precision</button>
-              <button class="spray-mode-btn" id="mode-continuous">♾️ Continuous</button>
-            </div>
-
-            <!-- Precision Mode Controls -->
-            <div id="precision-controls">
-              <div class="input-group">
-                <label class="input-label">Spray Duration</label>
-                <div class="input-row">
-                  <input type="number" class="input-field" id="spray-duration" value="800" min="100" max="5000" step="100">
-                  <span class="input-suffix">ms</span>
-                </div>
-              </div>
-              <button class="btn btn-warning" id="btn-spray-once">
-                💨 Spray Once
-              </button>
-            </div>
-
-            <!-- Continuous Mode Controls -->
-            <div id="continuous-controls" style="display: none;">
-              <div class="btn-group">
-                <button class="btn btn-success" id="btn-spray-start">
-                  ▶️ Start Spray
-                </button>
-                <button class="btn btn-danger" id="btn-spray-stop" disabled>
-                  ⏹️ Stop Spray
-                </button>
-              </div>
-              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; text-align: center;">
-                ⚠️ Auto-shutoff after 30 seconds for safety
-              </p>
-            </div>
-          </div>
+        
+        <div class="mode-toggle" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+          <button class="mode-btn active" id="modePrecision" onclick="setSprayMode('precision')">
+            ⏱️ Precision
+          </button>
+          <button class="mode-btn" id="modeContinuous" onclick="setSprayMode('continuous')">
+            🌊 Continuous
+          </button>
+          <button class="mode-btn" id="modeSmart" onclick="setSprayMode('smart')">
+            🧠 Smart
+          </button>
+        </div>
+        <div class="mode-description" style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px;" id="modeDescription">
+          ⏱️ <strong>Precision:</strong> Spray each cell for a fixed duration with delays
+        </div>
+        
+        <div class="spray-actions">
+          <button class="action-btn success neu-button" onclick="startSpray()">
+            <span class="btn-icon">▶️</span>
+            Start
+          </button>
+          <button class="action-btn danger neu-button" onclick="stopSpray()">
+            <span class="btn-icon">⏹️</span>
+            Stop
+          </button>
+          <button class="action-btn primary neu-button" id="spraySequenceBtn" onclick="startSpraySequence()">
+            <span class="btn-icon">🚀</span>
+            Start Spray Sequence
+          </button>
         </div>
       </div>
-
+      
       <!-- Mission Control -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <div class="card-title-icon">🎯</div>
-            <span>Mission Control</span>
-          </div>
+      <div class="mission-control glass-card">
+        <div class="mission-title">
+          <span>🎮</span>
+          Mission Control
         </div>
-        <div class="card-body">
-          <div class="mission-steps">
-            <div class="mission-step" id="step-1">
-              <div class="step-number">1</div>
-              <div class="step-info">
-                <div class="step-title">Capture Wall</div>
-                <div class="step-desc">Take photo for analysis</div>
-              </div>
-            </div>
-            <div class="mission-step" id="step-2">
-              <div class="step-number">2</div>
-              <div class="step-info">
-                <div class="step-title">Select Areas</div>
-                <div class="step-desc">Click unpainted cells</div>
-              </div>
-            </div>
-            <div class="mission-step" id="step-3">
-              <div class="step-number">3</div>
-              <div class="step-info">
-                <div class="step-title">Start Mission</div>
-                <div class="step-desc">Begin autonomous painting</div>
-              </div>
-            </div>
-          </div>
-          <div style="margin-top: 16px;">
-            <button class="btn btn-primary" id="btn-start-mission" disabled>
-              🚀 Start Autonomous Mission
-            </button>
-          </div>
+        <div class="mission-actions">
+          <button class="mission-btn" onclick="captureAndDetect()">
+            <span class="emoji">📸</span>
+            Capture & Detect
+          </button>
+          <button class="mission-btn" onclick="selectAllUnpainted()">
+            <span class="emoji">🎯</span>
+            Select All Unpainted
+          </button>
+          <button class="mission-btn" onclick="clearSelection()">
+            <span class="emoji">🧹</span>
+            Clear Selection
+          </button>
+          <button class="mission-btn" onclick="pingESP()">
+            <span class="emoji">📡</span>
+            Ping ESP32
+          </button>
         </div>
       </div>
+      
+    </aside>
 
-      <!-- Console Log -->
-      <div class="console">
-        <div class="console-header">
-          <span class="console-title">Activity Log</span>
-          <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.7rem;" id="btn-clear-log">Clear</button>
+    <!-- Activity Log -->
+    <section class="log-section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="icon">📋</span>
+          Activity Log
         </div>
-        <div class="console-body" id="console-body">
+        <button class="mission-btn" onclick="clearLog()" style="padding: 8px 14px; font-size: 11px;">
+          <span class="emoji">🗑️</span>
+          Clear
+        </button>
+      </div>
+      
+      <div class="glass-card">
+        <div class="log-container" id="logContainer">
           <div class="log-entry">
             <span class="log-time">--:--:--</span>
-            <span class="log-msg info">System initialized. Waiting for connections...</span>
+            <span class="log-type info">INFO</span>
+            <span class="log-message">System initialized. Ready for operation.</span>
           </div>
         </div>
       </div>
-    </div>
+    </section>
+    
   </main>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <span>© 2024 VIT Chennai — Multi-Disciplinary Project</span>
-    <div class="footer-links">
-      <a href="https://github.com/daksh1403/auto-drone" target="_blank">GitHub</a>
-      <a href="#">Documentation</a>
-      <a href="#">Help</a>
-    </div>
-  </footer>
+  <!-- VIT Chennai Branding -->
+  <div class="branding">
+    <span>Developed at</span>
+    <span class="branding-badge">VIT CHENNAI</span>
+  </div>
+
 </div>
 
-<!-- Emergency Stop Modal -->
-<div class="modal-overlay" id="emergency-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">⚠️ Emergency Stop</span>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <p style="margin-bottom: 16px;">Are you sure you want to perform an emergency stop? This will:</p>
-      <ul style="margin-left: 20px; color: var(--text-secondary);">
-        <li>Immediately stop spray system</li>
-        <li>Cancel current mission</li>
-      </ul>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-danger" onclick="emergencyStop()">🛑 Confirm Stop</button>
-    </div>
-  </div>
+<!-- Floating Action Buttons -->
+<div class="fab-container">
+  <button class="fab capture" onclick="captureAndDetect()" title="Capture Frame">
+    📸
+    <span class="fab-tooltip">Capture (Space)</span>
+  </button>
+  <button class="fab emergency" onclick="openEmergencyModal()" title="Emergency Stop">
+    🛑
+    <span class="fab-tooltip">Emergency (Esc)</span>
+  </button>
 </div>
+
+<!-- Keyboard Shortcuts Hint -->
+<div class="shortcuts-hint">
+  <div class="shortcut"><kbd>Space</kbd> Capture</div>
+  <div class="shortcut"><kbd>S</kbd> Spray</div>
+  <div class="shortcut"><kbd>Esc</kbd> Stop</div>
+</div>
+
+<!-- Audio Elements (for UI sounds) -->
+<audio id="soundClick" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2AgIF/fHh0cXF1ent/gIOFhYWEgn98eXd1dHR1d3l8f4GDhYaGhoWDgX57eHZ0c3N0dnh7foGEhoiIiIeFgn97eHV0c3N0dnh7f4KFh4mJiYiGg4B9eXZ0c3N0dnh7f4KFiImJiYeGg397eHZ0c3R1d3l8f4KFh4mJiIeFgn97eHZ0dHR2eHt+gYSGiIiIh4WCf3x5dnR0dHZ4e36BhIaIiIiHhYJ/fHl2dHR0dnh7foGEhoiIiIeFgn98eXZ0dHR2eHt+gYSGiIiIh4WCf3x5dnR0dXd5fH+ChYeJiYiGhIF+e3h1dHR1d3l8f4KFh4mJiIaEgX57eHV0dHV3eXx/goWHiYmIhoSBfnt4dXR0dXd5fH+ChYeJiYiGhIF+e3h1dHR1d3l8f4KFh4mJiIaEgX57eHV0dA==" type="audio/wav">
+</audio>
+<audio id="soundSuccess" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJCgoKCXkIl/eHJucHN5f4SGh4eGhIJ+e3h1c3JzdXh7foGEhoiIiIaEgX57eHVzcnN1eHt+gYSGiIiIhoSBfnt4dXNyc3V4e36BhIaIiIiGhIF+e3h1c3Jzd3p9gIOGiIqKiYeFgn98eXZzc3V4e36BhIaIiYmHhYJ/fHl2c3N1eHt+gYSGiImJh4WCf3x5dnNzdXh7foGEhoiJiYeFgn98eXZzc3V4e36BhIaIiYmHhYJ/fHl2c3N1eHt+gYSGiImJh4WCf3x5dnNzdXh7foGEhoiJiYeFgn98eXZzc3V4e36BhIaIiYmHhYJ/fHl2c3N1eHt+gYSGiImJh4WCf3x5dnNzdXh7foGEhoiJiQ==" type="audio/wav">
+</audio>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════════
-   CONFIGURATION
+   AUTONOMOUS PAINTING SYSTEM — CONTROL SCRIPT
+   Ultra-Premium Industrial UI v3.0
    ═══════════════════════════════════════════════════════════════════════════════ */
+
+// Configuration
 const CONFIG = {
+  ESP32_IP: '192.168.4.1',
   GRID_ROWS: 8,
   GRID_COLS: 12,
-  ESP32_IP: '192.168.4.1',
-  BACKEND_URL: '',  // Same origin
-  PING_INTERVAL: 3000,
-  DEFAULT_SPRAY_DURATION: 800
+  SPRAY_DURATION_MS: 500,
+  SPRAY_DELAY_MS: 200,
+  PING_INTERVAL: 5000,
+  API_TIMEOUT: 10000
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   STATE
-   ═══════════════════════════════════════════════════════════════════════════════ */
+// State
 const state = {
-  espConnected: false,
+  selectedCells: new Set(),
+  unpaintedCells: new Set(),
+  sprayedCells: new Set(),
+  sprayMode: 'precision',
+  isSprayActive: false,
   isSpraying: false,
-  sprayMode: 'precision',  // 'precision' or 'continuous'
-  viewMode: 'live',        // 'live' or 'analysis'
-  grid: [],                // 2D array: null=empty, 'unpainted', 'selected', 'sprayed'
-  currentStep: 0,
-  missionActive: false,
-  totalCells: CONFIG.GRID_ROWS * CONFIG.GRID_COLS,
-  stats: {
-    unpainted: 0,
-    selected: 0,
-    sprayed: 0
-  }
+  espConnected: false,
+  soundEnabled: true,
+  sprayedCount: 0
 };
 
-// Initialize grid
-for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-  state.grid[r] = [];
-  for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-    state.grid[r][c] = null;
+// DOM Elements
+const elements = {
+  videoFeed: null,
+  detectionGrid: null,
+  espStatus: null,
+  sprayStatus: null,
+  logContainer: null,
+  toastContainer: null,
+  progressFill: null,
+  progressValue: null,
+  statUnpainted: null,
+  statSelected: null,
+  statSprayed: null,
+  gridInfo: null,
+  timestamp: null
+};
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  initializeElements();
+  initializeGrid();
+  initializeParticles();
+  startTimestampUpdate();
+  checkESPConnection();
+  setInterval(checkESPConnection, CONFIG.PING_INTERVAL);
+  
+  log('System initialized. Ready for operation.', 'info');
+  log('ESP32-CAM feed connecting...', 'info');
+  showToast('🚀 System Online', 'Welcome to Autonomous Painting Control', 'success');
+});
+
+// Initialize DOM references
+function initializeElements() {
+  elements.videoFeed = document.getElementById('videoFeed');
+  elements.detectionGrid = document.getElementById('detectionGrid');
+  elements.espStatus = document.getElementById('espStatus');
+  elements.sprayStatus = document.getElementById('sprayStatus');
+  elements.logContainer = document.getElementById('logContainer');
+  elements.toastContainer = document.getElementById('toastContainer');
+  elements.progressFill = document.getElementById('progressFill');
+  elements.progressValue = document.getElementById('progressValue');
+  elements.statUnpainted = document.getElementById('statUnpainted');
+  elements.statSelected = document.getElementById('statSelected');
+  elements.statSprayed = document.getElementById('statSprayed');
+  elements.gridInfo = document.getElementById('gridInfo');
+  elements.timestamp = document.getElementById('timestamp');
+}
+
+// Initialize detection grid
+function initializeGrid() {
+  elements.detectionGrid.innerHTML = '';
+  
+  for (let row = 0; row < CONFIG.GRID_ROWS; row++) {
+    for (let col = 0; col < CONFIG.GRID_COLS; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+      cell.onclick = () => toggleCell(row, col, cell);
+      elements.detectionGrid.appendChild(cell);
+    }
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   DOM ELEMENTS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-const DOM = {
-  // Status badges
-  espStatus: document.getElementById('esp-status'),
-  sprayStatus: document.getElementById('spray-status'),
+// Initialize floating particles
+function initializeParticles() {
+  const container = document.getElementById('particles');
+  const particleCount = 30;
   
-  // View elements
-  cameraFeed: document.getElementById('camera-feed'),
-  capturedImage: document.getElementById('captured-image'),
-  gridCanvas: document.getElementById('grid-canvas'),
-  overlayLive: document.getElementById('overlay-live'),
-  overlayCaptured: document.getElementById('overlay-captured'),
-  
-  // Buttons
-  btnLive: document.getElementById('btn-live'),
-  btnAnalysis: document.getElementById('btn-analysis'),
-  btnCapture: document.getElementById('btn-capture'),
-  btnSelectAll: document.getElementById('btn-select-all'),
-  btnClear: document.getElementById('btn-clear'),
-  btnSprayOnce: document.getElementById('btn-spray-once'),
-  btnSprayStart: document.getElementById('btn-spray-start'),
-  btnSprayStop: document.getElementById('btn-spray-stop'),
-  btnStartMission: document.getElementById('btn-start-mission'),
-  btnClearLog: document.getElementById('btn-clear-log'),
-  
-  // Mode selectors
-  modePrecision: document.getElementById('mode-precision'),
-  modeContinuous: document.getElementById('mode-continuous'),
-  precisionControls: document.getElementById('precision-controls'),
-  continuousControls: document.getElementById('continuous-controls'),
-  
-  // Inputs
-  sprayDuration: document.getElementById('spray-duration'),
-  
-  // Stats
-  statTotal: document.getElementById('stat-total'),
-  statUnpainted: document.getElementById('stat-unpainted'),
-  statSelected: document.getElementById('stat-selected'),
-  statSprayed: document.getElementById('stat-sprayed'),
-  
-  // Progress
-  progressPercent: document.getElementById('progress-percent'),
-  progressFill: document.getElementById('progress-fill'),
-  cellsPainted: document.getElementById('cells-painted'),
-  cellsRemaining: document.getElementById('cells-remaining'),
-  
-  // Mission steps
-  step1: document.getElementById('step-1'),
-  step2: document.getElementById('step-2'),
-  step3: document.getElementById('step-3'),
-  
-  // Console
-  consoleBody: document.getElementById('console-body'),
-  
-  // Modal
-  emergencyModal: document.getElementById('emergency-modal')
-};
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDuration = (15 + Math.random() * 20) + 's';
+    particle.style.animationDelay = Math.random() * -20 + 's';
+    particle.style.opacity = 0.1 + Math.random() * 0.3;
+    particle.style.width = (2 + Math.random() * 4) + 'px';
+    particle.style.height = particle.style.width;
+    container.appendChild(particle);
+  }
+}
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LOGGING
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function log(msg, type = 'info') {
+// Update timestamp
+function startTimestampUpdate() {
+  setInterval(() => {
+    const now = new Date();
+    elements.timestamp.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+  }, 1000);
+}
+
+// Toggle cell selection
+function toggleCell(row, col, cellElement) {
+  const key = `${row},${col}`;
+  
+  playSound('click');
+  
+  if (state.selectedCells.has(key)) {
+    state.selectedCells.delete(key);
+    cellElement.classList.remove('selected');
+  } else {
+    state.selectedCells.add(key);
+    cellElement.classList.add('selected');
+  }
+  
+  updateStats();
+}
+
+// Update statistics
+function updateStats() {
+  const total = CONFIG.GRID_ROWS * CONFIG.GRID_COLS;
+  const unpainted = state.unpaintedCells.size;
+  const selected = state.selectedCells.size;
+  const sprayed = state.sprayedCount;
+  
+  elements.statUnpainted.textContent = unpainted;
+  elements.statSelected.textContent = selected;
+  elements.statSprayed.textContent = sprayed;
+  
+  // Update progress
+  const progress = total > 0 ? Math.round((sprayed / total) * 100) : 0;
+  elements.progressFill.style.width = progress + '%';
+  elements.progressValue.textContent = progress + '%';
+  
+  // Update grid info
+  elements.gridInfo.textContent = `Grid: ${CONFIG.GRID_ROWS}×${CONFIG.GRID_COLS} • Selected: ${selected}`;
+}
+
+// Set spray mode
+function setSprayMode(mode) {
+  state.sprayMode = mode;
+  
+  document.getElementById('modePrecision').classList.toggle('active', mode === 'precision');
+  document.getElementById('modeContinuous').classList.toggle('active', mode === 'continuous');
+  document.getElementById('modeSmart').classList.toggle('active', mode === 'smart');
+  
+  // Update mode description
+  const descriptions = {
+    'precision': '⏱️ <strong>Precision:</strong> Spray each cell for a fixed duration with delays',
+    'continuous': '🌊 <strong>Continuous:</strong> Continuous spray while traversing cells',
+    'smart': '🧠 <strong>Smart:</strong> BFS clustering - continuous spray for cell clusters ≥3, precision for isolated cells'
+  };
+  document.getElementById('modeDescription').innerHTML = descriptions[mode];
+  
+  playSound('click');
+  log(`Spray mode set to: ${mode.toUpperCase()}`, 'info');
+}
+
+// API Calls
+async function apiCall(endpoint, options = {}) {
+  try {
+    const response = await fetch(endpoint, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    }
+    return await response.text();
+  } catch (error) {
+    console.error(`API Error (${endpoint}):`, error);
+    throw error;
+  }
+}
+
+// Check ESP32 Connection
+async function checkESPConnection() {
+  try {
+    await apiCall('/esp_ping');
+    state.espConnected = true;
+    elements.espStatus.classList.remove('offline', 'warning');
+    elements.espStatus.classList.add('online');
+  } catch {
+    state.espConnected = false;
+    elements.espStatus.classList.remove('online', 'warning');
+    elements.espStatus.classList.add('offline');
+  }
+}
+
+// Ping ESP32
+async function pingESP() {
+  log('Pinging ESP32...', 'info');
+  
+  try {
+    const response = await apiCall('/esp_ping');
+    state.espConnected = true;
+    elements.espStatus.classList.remove('offline');
+    elements.espStatus.classList.add('online');
+    log('ESP32 connected successfully!', 'success');
+    showToast('📡 Connected', 'ESP32 is online', 'success');
+    playSound('success');
+  } catch (error) {
+    state.espConnected = false;
+    elements.espStatus.classList.remove('online');
+    elements.espStatus.classList.add('offline');
+    log('ESP32 connection failed: ' + error.message, 'error');
+    showToast('❌ Connection Failed', 'Could not reach ESP32', 'error');
+  }
+}
+
+// Capture and Detect
+async function captureAndDetect() {
+  log('Capturing frame and detecting unpainted areas...', 'info');
+  showToast('📸 Capturing', 'Analyzing frame...', 'info');
+  
+  try {
+    const response = await apiCall('/capture', { method: 'POST' });
+    
+    // Clear previous unpainted
+    state.unpaintedCells.clear();
+    document.querySelectorAll('.grid-cell.unpainted').forEach(cell => {
+      cell.classList.remove('unpainted');
+    });
+    
+    // Mark new unpainted cells
+    if (response.unpainted_cells && Array.isArray(response.unpainted_cells)) {
+      response.unpainted_cells.forEach(([row, col]) => {
+        const key = `${row},${col}`;
+        state.unpaintedCells.add(key);
+        
+        const cell = document.querySelector(
+          `.grid-cell[data-row="${row}"][data-col="${col}"]`
+        );
+        if (cell) {
+          cell.classList.add('unpainted');
+        }
+      });
+    }
+    
+    updateStats();
+    log(`Detection complete. Found ${state.unpaintedCells.size} unpainted areas.`, 'success');
+    showToast('✅ Detection Complete', `Found ${state.unpaintedCells.size} unpainted areas`, 'success');
+    playSound('success');
+    
+  } catch (error) {
+    log('Detection failed: ' + error.message, 'error');
+    showToast('❌ Detection Failed', error.message, 'error');
+  }
+}
+
+// Select all unpainted cells
+function selectAllUnpainted() {
+  state.unpaintedCells.forEach(key => {
+    state.selectedCells.add(key);
+    const [row, col] = key.split(',');
+    const cell = document.querySelector(
+      `.grid-cell[data-row="${row}"][data-col="${col}"]`
+    );
+    if (cell) {
+      cell.classList.add('selected');
+    }
+  });
+  
+  updateStats();
+  playSound('click');
+  log(`Selected ${state.unpaintedCells.size} unpainted cells.`, 'info');
+}
+
+// Clear selection
+function clearSelection() {
+  state.selectedCells.clear();
+  document.querySelectorAll('.grid-cell.selected').forEach(cell => {
+    cell.classList.remove('selected');
+  });
+  
+  updateStats();
+  playSound('click');
+  log('Selection cleared.', 'info');
+}
+
+// Start continuous spray
+async function startSpray() {
+  if (state.isSprayActive) return;
+  
+  state.isSprayActive = true;
+  elements.sprayStatus.classList.remove('offline');
+  elements.sprayStatus.classList.add('online');
+  
+  log('Starting continuous spray...', 'spray');
+  showToast('💨 Spray Started', 'Continuous spray active', 'info');
+  
+  try {
+    await apiCall('/spray_start', { method: 'POST' });
+    document.getElementById('spraySequenceBtn').classList.add('spray-active');
+  } catch (error) {
+    log('Failed to start spray: ' + error.message, 'error');
+    showToast('❌ Spray Error', error.message, 'error');
+    state.isSprayActive = false;
+    elements.sprayStatus.classList.remove('online');
+    elements.sprayStatus.classList.add('offline');
+  }
+}
+
+// Stop spray
+async function stopSpray() {
+  state.isSprayActive = false;
+  elements.sprayStatus.classList.remove('online');
+  elements.sprayStatus.classList.add('offline');
+  document.getElementById('spraySequenceBtn').classList.remove('spray-active');
+  
+  log('Stopping spray...', 'warning');
+  
+  try {
+    await apiCall('/spray_stop', { method: 'POST' });
+    showToast('⏹️ Spray Stopped', 'Spray system deactivated', 'warning');
+  } catch (error) {
+    log('Failed to stop spray: ' + error.message, 'error');
+  }
+}
+
+// Start spray sequence on selected cells
+async function startSpraySequence() {
+  if (state.selectedCells.size === 0) {
+    showToast('⚠️ No Selection', 'Please select cells to spray', 'warning');
+    log('No cells selected for spray sequence.', 'warning');
+    return;
+  }
+  
+  if (state.isSpraying) {
+    showToast('⚠️ Already Spraying', 'Please wait for current sequence', 'warning');
+    return;
+  }
+  
+  state.isSpraying = true;
+  document.getElementById('spraySequenceBtn').classList.add('spray-active');
+  elements.sprayStatus.classList.remove('offline');
+  elements.sprayStatus.classList.add('online');
+  
+  const cells = Array.from(state.selectedCells).map(key => {
+    const [row, col] = key.split(',').map(Number);
+    return [row, col];
+  });
+  
+  log(`Starting spray sequence on ${cells.length} cells (${state.sprayMode} mode)...`, 'spray');
+  showToast('🚀 Sequence Started', `Spraying ${cells.length} cells in ${state.sprayMode} mode`, 'info');
+  
+  try {
+    // Use different endpoints based on mode
+    const endpoint = state.sprayMode === 'smart' ? '/smart_spray_sequence' : '/spray_sequence';
+    const cellsJson = encodeURIComponent(JSON.stringify(cells));
+    
+    // Use SSE (Server-Sent Events) for real-time progress
+    const evtSource = new EventSource(`${endpoint}?cells=${cellsJson}`);
+    
+    evtSource.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      
+      if (data.event === 'moving') {
+        log(`Moving to cell (${data.row}, ${data.col}) - ${data.cell}/${data.total}`, 'info');
+        // Highlight current cell
+        highlightCell(data.row, data.col, 'moving');
+      } else if (data.event === 'spraying') {
+        log(`💨 Spraying cell (${data.row}, ${data.col})`, 'spray');
+        highlightCell(data.row, data.col, 'spraying');
+      } else if (data.event === 'done') {
+        // Mark cell as sprayed
+        const key = `${data.row},${data.col}`;
+        state.sprayedCells.add(key);
+        state.selectedCells.delete(key);
+        state.sprayedCount++;
+        
+        const cell = document.querySelector(
+          `.grid-cell[data-row="${data.row}"][data-col="${data.col}"]`
+        );
+        if (cell) {
+          cell.classList.add('sprayed');
+          cell.classList.remove('selected', 'unpainted', 'moving', 'spraying');
+        }
+        updateStats();
+        
+        log(`✓ Cell (${data.row}, ${data.col}) sprayed`, 'success');
+      } else if (data.event === 'complete') {
+        evtSource.close();
+        log(`🎉 Spray sequence completed! Sprayed ${data.total} cells.`, 'success');
+        showToast('✅ Sequence Complete', `Successfully sprayed ${data.total} cells`, 'success');
+        playSound('success');
+        
+        state.isSpraying = false;
+        document.getElementById('spraySequenceBtn').classList.remove('spray-active');
+        elements.sprayStatus.classList.remove('online');
+        elements.sprayStatus.classList.add('offline');
+      } else if (data.event === 'cluster_start') {
+        log(`🔗 Starting cluster spray: ${data.cluster_size} connected cells`, 'info');
+      } else if (data.event === 'cluster_end') {
+        log(`✓ Cluster complete`, 'success');
+      }
+    };
+    
+    evtSource.onerror = function(err) {
+      evtSource.close();
+      log('Spray sequence error or completed', 'warning');
+      state.isSpraying = false;
+      document.getElementById('spraySequenceBtn').classList.remove('spray-active');
+      elements.sprayStatus.classList.remove('online');
+      elements.sprayStatus.classList.add('offline');
+    };
+    
+  } catch (error) {
+    log('Spray sequence failed: ' + error.message, 'error');
+    showToast('❌ Sequence Failed', error.message, 'error');
+    state.isSpraying = false;
+    document.getElementById('spraySequenceBtn').classList.remove('spray-active');
+    elements.sprayStatus.classList.remove('online');
+    elements.sprayStatus.classList.add('offline');
+  }
+}
+
+// Helper to highlight cells during spray
+function highlightCell(row, col, state) {
+  // Remove previous highlight
+  document.querySelectorAll('.grid-cell.moving, .grid-cell.spraying').forEach(c => {
+    c.classList.remove('moving', 'spraying');
+  });
+  
+  const cell = document.querySelector(
+    `.grid-cell[data-row="${row}"][data-col="${col}"]`
+  );
+  if (cell) {
+    cell.classList.add(state);
+  }
+}
+
+// Emergency Stop
+function openEmergencyModal() {
+  document.getElementById('emergencyModal').classList.add('active');
+  playSound('click');
+}
+
+function closeEmergencyModal() {
+  document.getElementById('emergencyModal').classList.remove('active');
+}
+
+async function confirmEmergencyStop() {
+  closeEmergencyModal();
+  
+  log('⚠️ EMERGENCY STOP ACTIVATED', 'error');
+  showToast('🛑 EMERGENCY STOP', 'All operations halted', 'error');
+  
+  state.isSprayActive = false;
+  state.isSpraying = false;
+  
+  elements.sprayStatus.classList.remove('online');
+  elements.sprayStatus.classList.add('offline');
+  document.getElementById('spraySequenceBtn').classList.remove('spray-active');
+  
+  try {
+    await apiCall('/spray_stop', { method: 'POST' });
+  } catch (error) {
+    console.error('Emergency stop error:', error);
+  }
+  
+  clearSelection();
+}
+
+// Logging
+function log(message, type = 'info') {
   const time = new Date().toLocaleTimeString('en-US', { hour12: false });
   const entry = document.createElement('div');
   entry.className = 'log-entry';
   entry.innerHTML = `
     <span class="log-time">${time}</span>
-    <span class="log-msg ${type}">${msg}</span>
+    <span class="log-type ${type}">${type.toUpperCase()}</span>
+    <span class="log-message">${message}</span>
   `;
-  DOM.consoleBody.appendChild(entry);
-  DOM.consoleBody.scrollTop = DOM.consoleBody.scrollHeight;
   
-  // Keep only last 50 entries
-  while (DOM.consoleBody.children.length > 50) {
-    DOM.consoleBody.removeChild(DOM.consoleBody.firstChild);
+  elements.logContainer.insertBefore(entry, elements.logContainer.firstChild);
+  
+  // Limit log entries
+  while (elements.logContainer.children.length > 100) {
+    elements.logContainer.removeChild(elements.logContainer.lastChild);
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CONNECTION STATUS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-async function checkESP32() {
-  try {
-    const res = await fetch('/esp_ping', { timeout: 2000 });
-    const data = await res.json();
-    state.espConnected = data.status === 'ok';
-    DOM.espStatus.classList.toggle('connected', state.espConnected);
-    if (state.espConnected && !DOM.espStatus.dataset.logged) {
-      log('ESP32-CAM connected ✓', 'success');
-      DOM.espStatus.dataset.logged = 'true';
-    }
-  } catch (e) {
-    state.espConnected = false;
-    DOM.espStatus.classList.remove('connected');
-    DOM.espStatus.dataset.logged = '';
-  }
+function clearLog() {
+  elements.logContainer.innerHTML = '';
+  log('Log cleared.', 'info');
+  playSound('click');
 }
 
-function startStatusPolling() {
-  checkESP32();
-  setInterval(() => {
-    checkESP32();
-  }, CONFIG.PING_INTERVAL);
+// Toast notifications
+function showToast(title, message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <div>
+      <div class="toast-message" style="font-weight: 600;">${title}</div>
+      <div class="toast-message" style="font-size: 11px; opacity: 0.8;">${message}</div>
+    </div>
+  `;
+  
+  elements.toastContainer.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   VIEW TOGGLE
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function setViewMode(mode) {
-  state.viewMode = mode;
-  DOM.btnLive.classList.toggle('active', mode === 'live');
-  DOM.btnAnalysis.classList.toggle('active', mode === 'analysis');
+// Sound feedback
+function toggleSound() {
+  state.soundEnabled = !state.soundEnabled;
+  const toggle = document.getElementById('soundToggle');
+  toggle.textContent = state.soundEnabled ? '🔊' : '🔇';
+  toggle.classList.toggle('active', state.soundEnabled);
   
-  if (mode === 'live') {
-    DOM.cameraFeed.style.display = 'block';
-    DOM.capturedImage.style.display = 'none';
-    DOM.overlayLive.style.display = 'flex';
-    DOM.overlayCaptured.style.display = 'none';
-    clearGrid();
-  } else {
-    DOM.overlayLive.style.display = 'none';
-    DOM.overlayCaptured.style.display = 'flex';
-  }
+  showToast(
+    state.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off',
+    `UI sounds ${state.soundEnabled ? 'enabled' : 'disabled'}`,
+    'info'
+  );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   GRID DRAWING
-   ═══════════════════════════════════════════════════════════════════════════════ */
-const canvas = DOM.gridCanvas;
-const ctx = canvas.getContext('2d');
-
-function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  drawGrid();
-}
-
-function drawGrid() {
-  const w = canvas.width;
-  const h = canvas.height;
-  const cellW = w / CONFIG.GRID_COLS;
-  const cellH = h / CONFIG.GRID_ROWS;
-  
-  ctx.clearRect(0, 0, w, h);
-  
-  // Draw cells
-  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-      const x = c * cellW;
-      const y = r * cellH;
-      const status = state.grid[r][c];
-      
-      if (status === 'unpainted') {
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-        ctx.fillRect(x, y, cellW, cellH);
-      } else if (status === 'selected') {
-        ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
-        ctx.fillRect(x, y, cellW, cellH);
-        // Draw selection indicator
-        ctx.strokeStyle = '#6366f1';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x + 2, y + 2, cellW - 4, cellH - 4);
-      } else if (status === 'sprayed') {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.5)';
-        ctx.fillRect(x, y, cellW, cellH);
-        // Draw checkmark
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(x + cellW * 0.25, y + cellH * 0.5);
-        ctx.lineTo(x + cellW * 0.45, y + cellH * 0.7);
-        ctx.lineTo(x + cellW * 0.75, y + cellH * 0.3);
-        ctx.stroke();
-      }
-    }
-  }
-  
-  // Draw grid lines
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.lineWidth = 1;
-  
-  for (let r = 0; r <= CONFIG.GRID_ROWS; r++) {
-    ctx.beginPath();
-    ctx.moveTo(0, r * cellH);
-    ctx.lineTo(w, r * cellH);
-    ctx.stroke();
-  }
-  
-  for (let c = 0; c <= CONFIG.GRID_COLS; c++) {
-    ctx.beginPath();
-    ctx.moveTo(c * cellW, 0);
-    ctx.lineTo(c * cellW, h);
-    ctx.stroke();
-  }
-}
-
-function clearGrid() {
-  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-      state.grid[r][c] = null;
-    }
-  }
-  updateStats();
-  drawGrid();
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   GRID CLICK HANDLING
-   ═══════════════════════════════════════════════════════════════════════════════ */
-canvas.addEventListener('click', (e) => {
-  if (state.viewMode !== 'analysis') return;
-  
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  const c = Math.floor(x / (canvas.width / CONFIG.GRID_COLS));
-  const r = Math.floor(y / (canvas.height / CONFIG.GRID_ROWS));
-  
-  if (r >= 0 && r < CONFIG.GRID_ROWS && c >= 0 && c < CONFIG.GRID_COLS) {
-    const current = state.grid[r][c];
-    
-    if (current === 'unpainted') {
-      state.grid[r][c] = 'selected';
-      log(`Cell [${r},${c}] selected`, 'info');
-    } else if (current === 'selected') {
-      state.grid[r][c] = 'unpainted';
-      log(`Cell [${r},${c}] deselected`, 'info');
-    }
-    
-    updateStats();
-    drawGrid();
-    updateMissionButton();
-  }
-});
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   STATS UPDATE
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function updateStats() {
-  let unpainted = 0, selected = 0, sprayed = 0;
-  
-  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-      const s = state.grid[r][c];
-      if (s === 'unpainted') unpainted++;
-      else if (s === 'selected') selected++;
-      else if (s === 'sprayed') sprayed++;
-    }
-  }
-  
-  state.stats = { unpainted, selected, sprayed };
-  
-  DOM.statTotal.textContent = state.totalCells;
-  DOM.statUnpainted.textContent = unpainted;
-  DOM.statSelected.textContent = selected;
-  DOM.statSprayed.textContent = sprayed;
-  
-  // Update progress
-  const total = unpainted + selected + sprayed;
-  const progress = total > 0 ? Math.round((sprayed / total) * 100) : 0;
-  DOM.progressPercent.textContent = progress + '%';
-  DOM.progressFill.style.width = progress + '%';
-  DOM.cellsPainted.textContent = sprayed + ' cells painted';
-  DOM.cellsRemaining.textContent = (unpainted + selected) + ' remaining';
-}
-
-function updateMissionButton() {
-  DOM.btnStartMission.disabled = state.stats.selected === 0;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CAPTURE & ANALYZE
-   ═══════════════════════════════════════════════════════════════════════════════ */
-async function captureAndAnalyze() {
-  log('Capturing frame for analysis...', 'info');
-  DOM.btnCapture.disabled = true;
-  DOM.btnCapture.innerHTML = '⏳ Analyzing...';
+function playSound(type) {
+  if (!state.soundEnabled) return;
   
   try {
-    const res = await fetch('/capture', { method: 'POST' });
-    const data = await res.json();
-    
-    if (data.success) {
-      // Show captured image
-      DOM.capturedImage.src = 'data:image/jpeg;base64,' + data.image_base64;
-      DOM.capturedImage.style.display = 'block';
-      DOM.cameraFeed.style.display = 'none';
-      
-      // Update grid with detection results
-      clearGrid();
-      for (const cell of data.unpainted_cells) {
-        state.grid[cell.row][cell.col] = 'unpainted';
-      }
-      
-      setViewMode('analysis');
-      updateStats();
-      drawGrid();
-      
-      log(`Analysis complete: ${data.unpainted_cells.length} unpainted cells detected`, 'success');
-      setMissionStep(1);
-    } else {
-      log('Capture failed: ' + (data.error || 'Unknown error'), 'error');
+    const audio = document.getElementById(type === 'success' ? 'soundSuccess' : 'soundClick');
+    if (audio) {
+      audio.currentTime = 0;
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
     }
   } catch (e) {
-    log('Capture error: ' + e.message, 'error');
-  }
-  
-  DOM.btnCapture.disabled = false;
-  DOM.btnCapture.innerHTML = '📸 Capture & Analyze';
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SPRAY CONTROLS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function setSprayMode(mode) {
-  state.sprayMode = mode;
-  DOM.modePrecision.classList.toggle('active', mode === 'precision');
-  DOM.modeContinuous.classList.toggle('active', mode === 'continuous');
-  DOM.precisionControls.style.display = mode === 'precision' ? 'block' : 'none';
-  DOM.continuousControls.style.display = mode === 'continuous' ? 'flex' : 'none';
-  log(`Spray mode: ${mode}`, 'info');
-}
-
-async function sprayOnce() {
-  const duration = parseInt(DOM.sprayDuration.value) || CONFIG.DEFAULT_SPRAY_DURATION;
-  log(`Spraying for ${duration}ms...`, 'warning');
-  
-  DOM.btnSprayOnce.disabled = true;
-  DOM.sprayStatus.classList.add('spraying');
-  state.isSpraying = true;
-  
-  try {
-    const res = await fetch('/spray', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ duration_ms: duration })
-    });
-    const data = await res.json();
-    
-    if (data.sprayed) {
-      log(`Spray complete (${duration}ms)`, 'success');
-    } else {
-      log('Spray failed: ' + (data.error || 'Unknown'), 'error');
-    }
-  } catch (e) {
-    log('Spray error: ' + e.message, 'error');
-  }
-  
-  state.isSpraying = false;
-  DOM.btnSprayOnce.disabled = false;
-  DOM.sprayStatus.classList.remove('spraying');
-}
-
-async function startContinuousSpray() {
-  log('Starting continuous spray...', 'warning');
-  
-  DOM.btnSprayStart.disabled = true;
-  DOM.btnSprayStop.disabled = false;
-  DOM.sprayStatus.classList.add('connected', 'spraying');
-  state.isSpraying = true;
-  
-  try {
-    const res = await fetch('/spray_start', { method: 'POST' });
-    const data = await res.json();
-    log('Continuous spray active (30s watchdog)', 'success');
-  } catch (e) {
-    log('Start spray error: ' + e.message, 'error');
-    stopContinuousSpray();
+    // Ignore audio errors
   }
 }
-
-async function stopContinuousSpray() {
-  log('Stopping spray...', 'info');
-  
-  try {
-    await fetch('/spray_stop', { method: 'POST' });
-    log('Spray stopped', 'success');
-  } catch (e) {
-    log('Stop spray error: ' + e.message, 'error');
-  }
-  
-  state.isSpraying = false;
-  DOM.btnSprayStart.disabled = false;
-  DOM.btnSprayStop.disabled = true;
-  DOM.sprayStatus.classList.remove('spraying');
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SMART PATH PLANNING - Groups adjacent cells for continuous spray
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function planSmartPath(selectedCells) {
-  /**
-   * Groups adjacent cells in each row for continuous spray.
-   * Returns array of "segments", each with:
-   *   { type: 'continuous' | 'precision', row, startCol, endCol, cells }
-   */
-  
-  // Group cells by row
-  const rowGroups = {};
-  for (const cell of selectedCells) {
-    if (!rowGroups[cell.row]) rowGroups[cell.row] = [];
-    rowGroups[cell.row].push(cell.col);
-  }
-  
-  const segments = [];
-  
-  // Process each row
-  for (const row in rowGroups) {
-    const cols = rowGroups[row].sort((a, b) => a - b);
-    
-    // Find consecutive sequences
-    let start = cols[0];
-    let prev = cols[0];
-    
-    for (let i = 1; i <= cols.length; i++) {
-      const current = cols[i];
-      
-      // If not consecutive or end of array
-      if (i === cols.length || current !== prev + 1) {
-        const length = prev - start + 1;
-        
-        if (length >= 2) {
-          // 2+ adjacent cells: continuous spray
-          segments.push({
-            type: 'continuous',
-            row: parseInt(row),
-            startCol: start,
-            endCol: prev,
-            cells: Array.from({ length: prev - start + 1 }, (_, i) => ({ row: parseInt(row), col: start + i }))
-          });
-        } else {
-          // Single cell: precision spray
-          segments.push({
-            type: 'precision',
-            row: parseInt(row),
-            startCol: start,
-            endCol: start,
-            cells: [{ row: parseInt(row), col: start }]
-          });
-        }
-        
-        if (i < cols.length) {
-          start = current;
-        }
-      }
-      
-      prev = current;
-    }
-  }
-  
-  // Sort segments: top to bottom, left to right
-  segments.sort((a, b) => {
-    if (a.row !== b.row) return a.row - b.row;
-    return a.startCol - b.startCol;
-  });
-  
-  return segments;
-}
-
-function showPathPreview(segments) {
-  /**
-   * Log the planned path before execution
-   */
-  log('━━━━━━ SMART PATH PLAN ━━━━━━', 'info');
-  
-  let continuousCount = 0;
-  let precisionCount = 0;
-  
-  for (const seg of segments) {
-    if (seg.type === 'continuous') {
-      log(`Row ${seg.row}: CONTINUOUS [${seg.startCol}→${seg.endCol}] (${seg.cells.length} cells)`, 'warning');
-      continuousCount += seg.cells.length;
-    } else {
-      log(`Row ${seg.row}: PRECISION [${seg.startCol}]`, 'info');
-      precisionCount++;
-    }
-  }
-  
-  log(`Total: ${continuousCount} continuous + ${precisionCount} precision = ${continuousCount + precisionCount} cells`, 'success');
-  log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   MISSION CONTROL
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function setMissionStep(step) {
-  state.currentStep = step;
-  
-  [DOM.step1, DOM.step2, DOM.step3].forEach((el, i) => {
-    el.classList.remove('active', 'completed');
-    if (i < step) el.classList.add('completed');
-    else if (i === step) el.classList.add('active');
-  });
-}
-
-async function startMission() {
-  if (state.stats.selected === 0) {
-    log('No cells selected!', 'error');
-    return;
-  }
-  
-  // Collect selected cells
-  const selectedCells = [];
-  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-      if (state.grid[r][c] === 'selected') {
-        selectedCells.push({ row: r, col: c });
-      }
-    }
-  }
-  
-  // Plan smart path
-  const segments = planSmartPath(selectedCells);
-  showPathPreview(segments);
-  
-  log('🚀 Starting SMART autonomous mission...', 'info');
-  setMissionStep(2);
-  DOM.btnStartMission.disabled = true;
-  DOM.btnStartMission.innerHTML = '⏳ Mission in Progress...';
-  state.missionActive = true;
-  
-  // Start smart spray sequence with SSE
-  try {
-    const eventSource = new EventSource('/smart_spray_sequence?segments=' + encodeURIComponent(JSON.stringify(segments)));
-    
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      if (data.event === 'segment_start') {
-        if (data.type === 'continuous') {
-          log(`Row ${data.row}: Flying to start [${data.startCol}]...`, 'info');
-        } else {
-          log(`Row ${data.row}: Flying to cell [${data.col}]...`, 'info');
-        }
-      } else if (data.event === 'continuous_spray_start') {
-        log(`Row ${data.row}: CONTINUOUS spray started! Flying ${data.startCol}→${data.endCol}`, 'warning');
-        DOM.sprayStatus.classList.add('spraying');
-      } else if (data.event === 'continuous_spray_end') {
-        log(`Row ${data.row}: Continuous spray complete (${data.cells_count} cells)`, 'success');
-        // Mark all cells in segment as sprayed
-        for (const cell of data.cells) {
-          state.grid[cell.row][cell.col] = 'sprayed';
-        }
-        updateStats();
-        drawGrid();
-        DOM.sprayStatus.classList.remove('spraying');
-      } else if (data.event === 'precision_spray') {
-        log(`Row ${data.row}: Precision spray at [${data.col}]`, 'warning');
-        DOM.sprayStatus.classList.add('spraying');
-      } else if (data.event === 'precision_done') {
-        state.grid[data.row][data.col] = 'sprayed';
-        updateStats();
-        drawGrid();
-        log(`Cell [${data.row},${data.col}] ✓`, 'success');
-        DOM.sprayStatus.classList.remove('spraying');
-      } else if (data.event === 'complete') {
-        log('🎉 SMART mission complete!', 'success');
-        eventSource.close();
-        missionComplete();
-      } else if (data.event === 'error') {
-        log('Mission error: ' + data.message, 'error');
-        eventSource.close();
-        missionComplete();
-      }
-    };
-    
-    eventSource.onerror = () => {
-      log('Mission connection lost', 'error');
-      eventSource.close();
-      missionComplete();
-    };
-    
-  } catch (e) {
-    log('Mission start error: ' + e.message, 'error');
-    missionComplete();
-  }
-}
-
-function missionComplete() {
-  state.missionActive = false;
-  DOM.btnStartMission.disabled = false;
-  DOM.btnStartMission.innerHTML = '🚀 Start Autonomous Mission';
-  updateMissionButton();
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SELECT ALL / CLEAR
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function selectAllUnpainted() {
-  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-      if (state.grid[r][c] === 'unpainted') {
-        state.grid[r][c] = 'selected';
-      }
-    }
-  }
-  updateStats();
-  drawGrid();
-  updateMissionButton();
-  log('All unpainted cells selected', 'info');
-}
-
-function clearSelection() {
-  for (let r = 0; r < CONFIG.GRID_ROWS; r++) {
-    for (let c = 0; c < CONFIG.GRID_COLS; c++) {
-      if (state.grid[r][c] === 'selected') {
-        state.grid[r][c] = 'unpainted';
-      }
-    }
-  }
-  updateStats();
-  drawGrid();
-  updateMissionButton();
-  log('Selection cleared', 'info');
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   MODAL
-   ═══════════════════════════════════════════════════════════════════════════════ */
-function showModal() {
-  DOM.emergencyModal.classList.add('show');
-}
-
-function closeModal() {
-  DOM.emergencyModal.classList.remove('show');
-}
-
-async function emergencyStop() {
-  log('🛑 EMERGENCY STOP!', 'error');
-  closeModal();
-  
-  try {
-    await fetch('/spray_stop', { method: 'POST' });
-    log('Emergency stop executed', 'warning');
-  } catch (e) {
-    log('Emergency stop error: ' + e.message, 'error');
-  }
-  
-  state.isSpraying = false;
-  state.missionActive = false;
-  DOM.sprayStatus.classList.remove('spraying');
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   EVENT LISTENERS
-   ═══════════════════════════════════════════════════════════════════════════════ */
-DOM.btnLive.addEventListener('click', () => setViewMode('live'));
-DOM.btnAnalysis.addEventListener('click', () => setViewMode('analysis'));
-DOM.btnCapture.addEventListener('click', captureAndAnalyze);
-DOM.btnSelectAll.addEventListener('click', selectAllUnpainted);
-DOM.btnClear.addEventListener('click', clearSelection);
-DOM.modePrecision.addEventListener('click', () => setSprayMode('precision'));
-DOM.modeContinuous.addEventListener('click', () => setSprayMode('continuous'));
-DOM.btnSprayOnce.addEventListener('click', sprayOnce);
-DOM.btnSprayStart.addEventListener('click', startContinuousSpray);
-DOM.btnSprayStop.addEventListener('click', stopContinuousSpray);
-DOM.btnStartMission.addEventListener('click', startMission);
-DOM.btnClearLog.addEventListener('click', () => {
-  DOM.consoleBody.innerHTML = '';
-  log('Log cleared', 'info');
-});
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && state.missionActive) {
-    showModal();
-  }
-  if (e.key === ' ' && !state.isSpraying && state.espConnected) {
-    e.preventDefault();
-    sprayOnce();
+  // Ignore if typing in input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  
+  switch (e.code) {
+    case 'Space':
+      e.preventDefault();
+      captureAndDetect();
+      break;
+    case 'KeyS':
+      if (!e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        startSpraySequence();
+      }
+      break;
+    case 'Escape':
+      e.preventDefault();
+      if (document.getElementById('emergencyModal').classList.contains('active')) {
+        closeEmergencyModal();
+      } else {
+        openEmergencyModal();
+      }
+      break;
   }
 });
 
-// Window resize
-window.addEventListener('resize', resizeCanvas);
+// Handle video feed errors
+if (elements.videoFeed) {
+  elements.videoFeed.onerror = () => {
+    log('Video feed disconnected. Retrying...', 'warning');
+    setTimeout(() => {
+      elements.videoFeed.src = '/video_feed?' + Date.now();
+    }, 2000);
+  };
+}
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   INITIALIZATION
-   ═══════════════════════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  resizeCanvas();
-  startStatusPolling();
-  setMissionStep(0);
-  log('Autonomous Painting System v2.0 loaded', 'success');
-  log('Keyboard: SPACE=spray, ESC=emergency stop', 'info');
-});
+console.log('%c🎨 Autonomous Painting System v3.0', 'color: #7c3aed; font-size: 16px; font-weight: bold;');
+console.log('%cVIT Chennai — Industrial Control Panel', 'color: #a855f7; font-size: 12px;');
 </script>
+
 </body>
 </html>

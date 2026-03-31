@@ -226,6 +226,25 @@ def index():
     return send_from_directory("static", "index.html")
 
 
+@app.route("/mobile")
+@app.route("/mobile.html")
+def mobile():
+    """Serve the mobile PWA."""
+    return send_from_directory("static", "mobile.html")
+
+
+@app.route("/manifest.json")
+def manifest():
+    """Serve PWA manifest."""
+    return send_from_directory("static", "manifest.json")
+
+
+@app.route("/sw.js")
+def service_worker():
+    """Serve service worker."""
+    return send_from_directory("static", "sw.js")
+
+
 # ══════════════════════════════════════════════════════════════
 #  Routes — ESP32-CAM Proxy
 # ══════════════════════════════════════════════════════════════
