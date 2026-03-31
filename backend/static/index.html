@@ -1966,8 +1966,23 @@ async function captureAndDetect() {
   log('Capturing frame and detecting unpainted areas...', 'info');
   showToast('📸 Capturing', 'Analyzing frame...', 'info');
   
+  // Freeze video feed during capture
+  const videoFeed = elements.videoFeed;
+  let originalSrc = null;
+  if (videoFeed) {
+    originalSrc = videoFeed.src;
+    videoFeed.style.filter = 'brightness(0.7)';
+    videoFeed.style.transition = 'filter 0.3s';
+  }
+  
   try {
     const response = await apiCall('/capture', { method: 'POST' });
+    
+    // Show captured frame as frozen image
+    if (response.image_base64 && videoFeed) {
+      videoFeed.src = 'data:image/jpeg;base64,' + response.image_base64;
+      videoFeed.style.filter = 'none';
+    }
     
     // Clear previous unpainted
     state.unpaintedCells.clear();
@@ -1998,9 +2013,22 @@ async function captureAndDetect() {
     showToast('✅ Detection Complete', `Found ${state.unpaintedCells.size} unpainted areas`, 'success');
     playSound('success');
     
+    // Resume live feed after 3 seconds to let user see the detection result
+    setTimeout(() => {
+      if (videoFeed && originalSrc) {
+        videoFeed.src = originalSrc + '?' + Date.now(); // Cache bust
+        log('Live feed resumed', 'info');
+      }
+    }, 3000);
+    
   } catch (error) {
     log('Detection failed: ' + error.message, 'error');
     showToast('❌ Detection Failed', error.message, 'error');
+    // Restore video on error
+    if (videoFeed && originalSrc) {
+      videoFeed.src = originalSrc + '?' + Date.now();
+      videoFeed.style.filter = 'none';
+    }
   }
 }
 
