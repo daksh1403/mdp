@@ -1977,7 +1977,10 @@ async function captureAndDetect() {
     
     // Mark new unpainted cells
     if (response.unpainted_cells && Array.isArray(response.unpainted_cells)) {
-      response.unpainted_cells.forEach(([row, col]) => {
+      response.unpainted_cells.forEach(item => {
+        // Support both array format [row, col] and object format {row, col}
+        const row = Array.isArray(item) ? item[0] : item.row;
+        const col = Array.isArray(item) ? item[1] : item.col;
         const key = `${row},${col}`;
         state.unpaintedCells.add(key);
         
