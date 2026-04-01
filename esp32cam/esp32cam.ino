@@ -1,7 +1,13 @@
 /*
  * ============================================================
- *  ESP32-CAM — Autonomous Painting System Controller
+ *  ESP32-CAM — Autonomous Painting System Controller (FIXED)
  * ============================================================
+ *
+ *  FIXES APPLIED:
+ *    1. Changed relay to ACTIVE-LOW (most common relay modules)
+ *    2. Initialize relay to OFF state on boot
+ *    3. Added startup delay to ensure relay is OFF before WiFi
+ *    4. Better spray timing and acknowledgment
  *
  *  Dual-port HTTP server for autonomous wall painting system:
  *    Port 80 → Control: /ping /status /spray /spray_start
@@ -10,7 +16,7 @@
  *
  *  WiFi AP:   SSID = PaintSystem, Password = paintdrone123
  *  AP IP:     192.168.4.1
- *  Relay:     GPIO 13 (active HIGH)
+ *  Relay:     GPIO 13 (ACTIVE-LOW - relay turns ON when pin is LOW)
  *
  *  Board:     AI Thinker ESP32-CAM
  *  Partition: Huge APP (3MB No OTA/1MB SPIFFS)
@@ -37,11 +43,19 @@ const char* AP_SSID     = "PaintSystem";
 const char* AP_PASSWORD = "paintdrone123";
 
 // ══════════════════════════════════════════════════════════════
-//  Relay / Spray Configuration
+//  Relay / Spray Configuration — ACTIVE LOW
+// ══════════════════════════════════════════════════════════════
+//  IMPORTANT: Most relay modules are ACTIVE-LOW
+//  This means: 
+//    - Pin HIGH = Relay OFF (pump stops)
+//    - Pin LOW  = Relay ON  (pump runs)
 // ══════════════════════════════════════════════════════════════
 #define RELAY_PIN  13
-#define RELAY_ON   HIGH   // Change to LOW if your relay is active-LOW
-#define RELAY_OFF  LOW
+
+// ACTIVE-LOW configuration (most common relay modules)
+// If your relay is ACTIVE-HIGH, swap these values
+#define RELAY_ON   LOW    // LOW turns relay ON (closes circuit)
+#define RELAY_OFF  HIGH   // HIGH turns relay OFF (opens circuit)
 
 // Safety watchdog: auto-shutoff after 30 seconds in continuous mode
 #define WATCHDOG_TIMEOUT_MS 30000
@@ -97,14 +111,25 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\n");
   Serial.println("╔══════════════════════════════════════════╗");
-  Serial.println("║   ESP32-CAM Painting System Controller   ║");
+  Serial.println("║   ESP32-CAM Painting System (FIXED)      ║");
   Serial.println("║   VIT Chennai MDP Project                ║");
+  Serial.println("║   Relay: ACTIVE-LOW Configuration        ║");
   Serial.println("╚══════════════════════════════════════════╝");
 
-  // Initialize relay pin
+  // ═══════════════════════════════════════════════════════════
+  // CRITICAL: Initialize relay pin FIRST and set to OFF
+  // This ensures pump doesn't run during boot
+  // ═══════════════════════════════════════════════════════════
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, RELAY_OFF);
-  Serial.println("[INIT] Relay pin configured (GPIO 13)");
+  digitalWrite(RELAY_PIN, RELAY_OFF);  // Ensure relay is OFF
+  delay(100);                          // Give relay time to settle
+  digitalWrite(RELAY_PIN, RELAY_OFF);  // Double-ensure relay is OFF
+  
+  Serial.println("[INIT] Relay pin configured (GPIO 13) - ACTIVE LOW");
+  Serial.println("[INIT] Relay state: OFF (pump should be stopped)");
+
+  // Wait a moment to ensure relay is definitely OFF before continuing
+  delay(500);
 
   // Initialize camera
   setupCamera();
@@ -113,6 +138,10 @@ void setup() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
   delay(500);
+  
+  // Re-ensure relay is OFF after WiFi init (just to be safe)
+  digitalWrite(RELAY_PIN, RELAY_OFF);
+  
   Serial.print("[WIFI] AP Started: ");
   Serial.println(AP_SSID);
   Serial.print("[WIFI] AP IP: ");
@@ -127,6 +156,10 @@ void setup() {
   controlServer.on("/spray_start",   HTTP_POST,    handleSprayStart);
   controlServer.on("/spray_stop",    HTTP_POST,    handleSprayStop);
   controlServer.on("/capture_frame", HTTP_GET,     handleCaptureFrame);
+  
+  // Force stop endpoint (for emergency)
+  controlServer.on("/force_stop",    HTTP_POST,    handleForceStop);
+  controlServer.on("/force_stop",    HTTP_GET,     handleForceStop);
 
   // CORS preflight handlers
   controlServer.on("/spray",       HTTP_OPTIONS, handleOptions);
@@ -143,10 +176,16 @@ void setup() {
   streamServer.begin();
   Serial.println("[HTTP] Stream server started on port 81");
 
+  // Final relay check
+  digitalWrite(RELAY_PIN, RELAY_OFF);
+  
   Serial.println("\n[READY] ESP32-CAM is ready!");
   Serial.println("        Connect to WiFi: PaintSystem");
   Serial.println("        Test: http://192.168.4.1/ping");
-  Serial.println("        Stream: http://192.168.4.1:81/stream\n");
+  Serial.println("        Stream: http://192.168.4.1:81/stream");
+  Serial.println("\n[RELAY] Configuration: ACTIVE-LOW");
+  Serial.println("        Pin HIGH = Relay OFF (pump stops)");
+  Serial.println("        Pin LOW  = Relay ON  (pump runs)\n");
 }
 
 /* ============================================================
@@ -225,8 +264,13 @@ void setupCamera() {
  * ============================================================ */
 void handlePing() {
   addCors(controlServer);
-  controlServer.send(200, "application/json", "{\"status\":\"ok\",\"device\":\"ESP32-CAM\"}");
-  Serial.println("[REQ] /ping → OK");
+  
+  // Also report relay state in ping for debugging
+  String relayState = relayActive ? "on" : "off";
+  String response = "{\"status\":\"ok\",\"device\":\"ESP32-CAM\",\"relay\":\"" + relayState + "\",\"relay_config\":\"active-low\"}";
+  
+  controlServer.send(200, "application/json", response);
+  Serial.println("[REQ] /ping → OK (relay: " + relayState + ")");
 }
 
 /* ============================================================
@@ -237,6 +281,7 @@ void handleStatus() {
   StaticJsonDocument<256> doc;
   doc["relay"]      = relayActive ? "on" : "off";
   doc["mode"]       = continuousMode ? "continuous" : "precision";
+  doc["relay_config"] = "active-low";
   doc["uptime_ms"]  = millis();
   doc["wifi_clients"] = WiFi.softAPgetStationNum();
   
@@ -268,15 +313,19 @@ void handleSpray() {
   dur = constrain(dur, 50, 5000);  // Limit: 50ms to 5 seconds
 
   Serial.printf("[SPRAY] Precision spray: %lu ms\n", dur);
+  Serial.println("[SPRAY] Turning relay ON (pin LOW for active-low)");
   
+  // Turn relay ON (LOW for active-low relay)
   digitalWrite(RELAY_PIN, RELAY_ON);
   relayActive    = true;
   continuousMode = false;
   relayOnTime    = millis();
   relayDuration  = dur;
 
-  String response = "{\"sprayed\":true,\"duration_ms\":" + String(dur) + "}";
+  String response = "{\"sprayed\":true,\"duration_ms\":" + String(dur) + ",\"relay_config\":\"active-low\"}";
   controlServer.send(200, "application/json", response);
+  
+  Serial.println("[SPRAY] Response sent, relay is ON");
 }
 
 /* ============================================================
@@ -286,13 +335,15 @@ void handleSprayStart() {
   addCors(controlServer);
 
   Serial.println("[SPRAY] CONTINUOUS spray START");
-  digitalWrite(RELAY_PIN, RELAY_ON);
+  Serial.println("[SPRAY] Turning relay ON (pin LOW for active-low)");
+  
+  digitalWrite(RELAY_PIN, RELAY_ON);  // LOW for active-low
   relayActive     = true;
   continuousMode  = true;
   continuousStart = millis();  // Start watchdog timer
 
   controlServer.send(200, "application/json",
-    "{\"status\":\"spraying\",\"mode\":\"continuous\",\"watchdog_ms\":30000}");
+    "{\"status\":\"spraying\",\"mode\":\"continuous\",\"watchdog_ms\":30000,\"relay_config\":\"active-low\"}");
 }
 
 /* ============================================================
@@ -302,12 +353,33 @@ void handleSprayStop() {
   addCors(controlServer);
 
   Serial.println("[SPRAY] SPRAY STOP");
-  digitalWrite(RELAY_PIN, RELAY_OFF);
+  Serial.println("[SPRAY] Turning relay OFF (pin HIGH for active-low)");
+  
+  digitalWrite(RELAY_PIN, RELAY_OFF);  // HIGH for active-low
   relayActive    = false;
   continuousMode = false;
 
   controlServer.send(200, "application/json",
-    "{\"status\":\"stopped\"}");
+    "{\"status\":\"stopped\",\"relay_config\":\"active-low\"}");
+}
+
+/* ============================================================
+ *  POST/GET /force_stop — Emergency force stop
+ * ============================================================ */
+void handleForceStop() {
+  addCors(controlServer);
+
+  Serial.println("[EMERGENCY] FORCE STOP - Turning relay OFF");
+  
+  // Force relay OFF regardless of state
+  digitalWrite(RELAY_PIN, RELAY_OFF);
+  digitalWrite(RELAY_PIN, RELAY_OFF);  // Double-ensure
+  
+  relayActive    = false;
+  continuousMode = false;
+
+  controlServer.send(200, "application/json",
+    "{\"status\":\"force_stopped\",\"relay\":\"off\"}");
 }
 
 /* ============================================================
