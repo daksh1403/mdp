@@ -847,7 +847,9 @@ body {
 }
 
 .mode-btn:hover:not(.active) {
-  color: var(--text-primary);
+  
+
+<note>Content truncated. Call the fetch tool with a start_index of 20000 to get more content.</note>color: var(--text-primary);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -1659,7 +1661,9 @@ body {
             <span class="emoji">📡</span>
             Ping ESP32
           </button>
-        </div>
+   
+
+<note>Content truncated. Call the fetch tool with a start_index of 40000 to get more content.</note>     </div>
       </div>
       
     </aside>
@@ -1727,8 +1731,16 @@ body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════════
-   AUTONOMOUS PAINTING SYSTEM — CONTROL SCRIPT
-   Ultra-Premium Industrial UI v3.0
+   AUTONOMOUS PAINTING SYSTEM — CONTROL SCRIPT (FIXED VERSION)
+   Ultra-Premium Industrial UI v3.1
+   
+   FIXES APPLIED:
+   1. Robust ESP32 reconnection during spray sequences
+   2. Proper camera feed freeze/unfreeze with error handling
+   3. Fixed signal sending for first few blocks
+   4. Always show full camera grid
+   5. Handle ESP disconnection during spray sequence with recovery
+   6. Improved SSE event handling with reconnection
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 // Configuration
@@ -1738,8 +1750,13 @@ const CONFIG = {
   GRID_COLS: 12,
   SPRAY_DURATION_MS: 500,
   SPRAY_DELAY_MS: 200,
-  PING_INTERVAL: 5000,
-  API_TIMEOUT: 10000
+  PING_INTERVAL: 3000,      // More frequent pings
+  PING_TIMEOUT: 5000,       // Timeout for pings
+  API_TIMEOUT: 10000,
+  RECONNECT_ATTEMPTS: 5,
+  RECONNECT_DELAY: 1000,
+  VIDEO_RETRY_DELAY: 2000,
+  FEED_FREEZE_DURATION: 5000  // How long to show frozen frame
 };
 
 // State
@@ -1752,7 +1769,14 @@ const state = {
   isSpraying: false,
   espConnected: false,
   soundEnabled: true,
-  sprayedCount: 0
+  sprayedCount: 0,
+  currentEventSource: null,    // Track SSE connection
+  videoFeedFrozen: false,
+  frozenImageSrc: null,
+  lastVideoSrc: null,
+  connectionRetries: 0,
+  failedCells: [],            // Track cells that failed during spray
+  spraySequenceAborted: false
 };
 
 // DOM Elements
@@ -1769,15 +1793,22 @@ const elements = {
   statSelected: null,
   statSprayed: null,
   gridInfo: null,
-  timestamp: null
+  timestamp: null,
+  connectionIndicator: null
 };
 
-// Initialize on DOM ready
+// ═══════════════════════════════════════════════════════════════════════════════
+//  INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeElements();
   initializeGrid();
   initializeParticles();
   startTimestampUpdate();
+  initializeVideoFeed();
+  
+  // Start connection monitoring
   checkESPConnection();
   setInterval(checkESPConnection, CONFIG.PING_INTERVAL);
   
@@ -1786,7 +1817,6 @@ document.addEventListener('DOMContentLoaded', () => {
   showToast('🚀 System Online', 'Welcome to Autonomous Painting Control', 'success');
 });
 
-// Initialize DOM references
 function initializeElements() {
   elements.videoFeed = document.getElementById('videoFeed');
   elements.detectionGrid = document.getElementById('detectionGrid');
@@ -1801,10 +1831,16 @@ function initializeElements() {
   elements.statSprayed = document.getElementById('statSprayed');
   elements.gridInfo = document.getElementById('gridInfo');
   elements.timestamp = document.getElementById('timestamp');
+  
+  // Store original video source
+  if (elements.videoFeed) {
+    state.lastVideoSrc = elements.videoFeed.src || '/video_feed';
+  }
 }
 
-// Initialize detection grid
 function initializeGrid() {
+  if (!elements.detectionGrid) return;
+  
   elements.detectionGrid.innerHTML = '';
   
   for (let row = 0; row < CONFIG.GRID_ROWS; row++) {
@@ -1817,11 +1853,17 @@ function initializeGrid() {
       elements.detectionGrid.appendChild(cell);
     }
   }
+  
+  // Ensure grid is always visible
+  elements.detectionGrid.style.display = 'grid';
+  elements.detectionGrid.style.opacity = '1';
+  elements.detectionGrid.style.pointerEvents = 'all';
 }
 
-// Initialize floating particles
 function initializeParticles() {
   const container = document.getElementById('particles');
+  if (!container) return;
+  
   const particleCount = 30;
   
   for (let i = 0; i < particleCount; i++) {
@@ -1837,15 +1879,306 @@ function initializeParticles() {
   }
 }
 
-// Update timestamp
-function startTimestampUpdate() {
-  setInterval(() => {
-    const now = new Date();
-    elements.timestamp.textContent = now.toLocaleTimeString('en-US', { hour12: false });
-  }, 1000);
+// ═══════════════════════════════════════════════════════════════════════════════
+//  VIDEO FEED MANAGEMENT (IMPROVED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function initializeVideoFeed() {
+  if (!elements.videoFeed) return;
+  
+  // Set initial source
+  elements.videoFeed.src = '/video_feed?' + Date.now();
+  state.lastVideoSrc = elements.videoFeed.src;
+  
+  // Error handler with automatic retry
+  elements.videoFeed.onerror = handleVideoError;
+  
+  // Load handler
+  elements.videoFeed.onload = () => {
+    state.connectionRetries = 0;
+    if (!state.videoFeedFrozen) {
+      log('Video feed connected', 'success');
+    }
+  };
 }
 
-// Toggle cell selection
+function handleVideoError() {
+  if (state.videoFeedFrozen) return; // Don't retry during frozen state
+  
+  state.connectionRetries++;
+  const maxRetries = CONFIG.RECONNECT_ATTEMPTS;
+  
+  if (state.connectionRetries <= maxRetries) {
+    log(`Video feed error. Retrying (${state.connectionRetries}/${maxRetries})...`, 'warning');
+    
+    setTimeout(() => {
+      if (!state.videoFeedFrozen && elements.videoFeed) {
+        elements.videoFeed.src = '/video_feed?' + Date.now();
+      }
+    }, CONFIG.VIDEO_RETRY_DELAY);
+  } else {
+    log('Video feed connection failed after max retries', 'error');
+    showToast('❌ Video Error', 'Camera feed disconnected', 'error');
+  }
+}
+
+function freezeVideoFeed(imageBase64) {
+  """
+  Freeze the video feed and show a static image.
+  This allows detection grid to overlay properly.
+  """
+  if (!elements.videoFeed) return;
+  
+  state.videoFeedFrozen = true;
+  state.lastVideoSrc = elements.videoFeed.src;
+  
+  if (imageBase64) {
+    state.frozenImageSrc = 'data:image/jpeg;base64,' + imageBase64;
+    elements.videoFeed.src = state.frozenImageSrc;
+  }
+  
+  // Visual feedback that feed is frozen
+  elements.videoFeed.style.filter = 'none';
+  elements.videoFeed.style.border = '2px solid var(--accent-primary)';
+  
+  log('Camera feed frozen for analysis', 'info');
+}
+
+function unfreezeVideoFeed() {
+  """
+  Resume live video feed after delay.
+  """
+  if (!elements.videoFeed) return;
+  
+  // Clear frozen state
+  state.videoFeedFrozen = false;
+  state.frozenImageSrc = null;
+  
+  // Resume live feed
+  elements.videoFeed.src = '/video_feed?' + Date.now();
+  elements.videoFeed.style.border = 'none';
+  
+  log('Live feed resumed', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ESP32 CONNECTION MANAGEMENT (IMPROVED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function checkESPConnection() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.PING_TIMEOUT);
+    
+    const response = await fetch('/esp_ping', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    const data = await response.json();
+    
+    if (data.status === 'ok' || data.connected) {
+      setESPConnected(true);
+    } else {
+      setESPConnected(false);
+    }
+  } catch (error) {
+    setESPConnected(false);
+  }
+}
+
+function setESPConnected(connected) {
+  const wasConnected = state.espConnected;
+  state.espConnected = connected;
+  
+  if (elements.espStatus) {
+    elements.espStatus.classList.remove('offline', 'warning', 'online');
+    elements.espStatus.classList.add(connected ? 'online' : 'offline');
+  }
+  
+  // Log state changes
+  if (connected && !wasConnected) {
+    log('ESP32 connected', 'success');
+    showToast('📡 Connected', 'ESP32 is online', 'success');
+  } else if (!connected && wasConnected) {
+    log('ESP32 disconnected', 'warning');
+    showToast('⚠️ Disconnected', 'ESP32 connection lost', 'warning');
+  }
+}
+
+async function waitForESPReconnect(maxWaitMs = 5000) {
+  """
+  Wait for ESP32 to reconnect with exponential backoff.
+  Returns true if reconnected, false if timeout.
+  """
+  const startTime = Date.now();
+  let delay = 200;
+  
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const response = await fetch('/esp_ping', { 
+        signal: AbortSignal.timeout(2000) 
+      });
+      const data = await response.json();
+      
+      if (data.status === 'ok' || data.connected) {
+        setESPConnected(true);
+        log('ESP32 reconnected', 'success');
+        return true;
+      }
+    } catch (error) {
+      // Continue waiting
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    delay = Math.min(delay * 1.5, 1000);
+  }
+  
+  return false;
+}
+
+async function pingESP() {
+  log('Pinging ESP32...', 'info');
+  
+  try {
+    const response = await apiCall('/esp_ping');
+    setESPConnected(true);
+    log('ESP32 connected successfully!', 'success');
+    showToast('📡 Connected', 'ESP32 is online', 'success');
+    playSound('success');
+  } catch (error) {
+    setESPConnected(false);
+    log('ESP32 connection failed: ' + error.message, 'error');
+    showToast('❌ Connection Failed', 'Could not reach ESP32', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  API CALLS (IMPROVED with timeout and retry)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function apiCall(endpoint, options = {}, retries = 3) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(endpoint, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      return await response.text();
+      
+    } catch (error) {
+      if (attempt === retries - 1) {
+        console.error(`API Error (${endpoint}):`, error);
+        throw error;
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CAPTURE AND DETECTION (IMPROVED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function captureAndDetect() {
+  log('Capturing frame and detecting unpainted areas...', 'info');
+  showToast('📸 Capturing', 'Analyzing frame...', 'info');
+  
+  // Store current video source before freezing
+  if (elements.videoFeed && !state.videoFeedFrozen) {
+    state.lastVideoSrc = elements.videoFeed.src;
+  }
+  
+  // Show loading state
+  if (elements.videoFeed) {
+    elements.videoFeed.style.filter = 'brightness(0.7)';
+    elements.videoFeed.style.transition = 'filter 0.3s';
+  }
+  
+  try {
+    const response = await apiCall('/capture', { method: 'POST' });
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Capture failed');
+    }
+    
+    // FREEZE the video feed and show captured frame
+    if (response.image_base64) {
+      freezeVideoFeed(response.image_base64);
+    }
+    
+    // Clear previous unpainted cells
+    state.unpaintedCells.clear();
+    document.querySelectorAll('.grid-cell.unpainted').forEach(cell => {
+      cell.classList.remove('unpainted');
+    });
+    
+    // Mark new unpainted cells
+    if (response.unpainted_cells && Array.isArray(response.unpainted_cells)) {
+      response.unpainted_cells.forEach(item => {
+        const row = Array.isArray(item) ? item[0] : item.row;
+        const col = Array.isArray(item) ? item[1] : item.col;
+        const key = `${row},${col}`;
+        state.unpaintedCells.add(key);
+        
+        const cell = document.querySelector(
+          `.grid-cell[data-row="${row}"][data-col="${col}"]`
+        );
+        if (cell) {
+          cell.classList.add('unpainted');
+        }
+      });
+    }
+    
+    // ENSURE grid is visible
+    if (elements.detectionGrid) {
+      elements.detectionGrid.style.display = 'grid';
+      elements.detectionGrid.style.opacity = '1';
+      elements.detectionGrid.style.pointerEvents = 'all';
+    }
+    
+    updateStats();
+    log(`Detection complete. Found ${state.unpaintedCells.size} unpainted areas.`, 'success');
+    showToast('✅ Detection Complete', `Found ${state.unpaintedCells.size} unpainted areas`, 'success');
+    playSound('success');
+    
+    // Resume live feed after configured duration
+    setTimeout(() => {
+      unfreezeVideoFeed();
+    }, CONFIG.FEED_FREEZE_DURATION);
+    
+  } catch (error) {
+    log('Detection failed: ' + error.message, 'error');
+    showToast('❌ Detection Failed', error.message, 'error');
+    
+    // Restore video on error
+    if (elements.videoFeed) {
+      elements.videoFeed.style.filter = 'none';
+    }
+    unfreezeVideoFeed();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CELL MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function toggleCell(row, col, cellElement) {
   const key = `${row},${col}`;
   
@@ -1862,177 +2195,6 @@ function toggleCell(row, col, cellElement) {
   updateStats();
 }
 
-// Update statistics
-function updateStats() {
-  const total = CONFIG.GRID_ROWS * CONFIG.GRID_COLS;
-  const unpainted = state.unpaintedCells.size;
-  const selected = state.selectedCells.size;
-  const sprayed = state.sprayedCount;
-  
-  elements.statUnpainted.textContent = unpainted;
-  elements.statSelected.textContent = selected;
-  elements.statSprayed.textContent = sprayed;
-  
-  // Update progress
-  const progress = total > 0 ? Math.round((sprayed / total) * 100) : 0;
-  elements.progressFill.style.width = progress + '%';
-  elements.progressValue.textContent = progress + '%';
-  
-  // Update grid info
-  elements.gridInfo.textContent = `Grid: ${CONFIG.GRID_ROWS}×${CONFIG.GRID_COLS} • Selected: ${selected}`;
-}
-
-// Set spray mode
-function setSprayMode(mode) {
-  state.sprayMode = mode;
-  
-  document.getElementById('modePrecision').classList.toggle('active', mode === 'precision');
-  document.getElementById('modeContinuous').classList.toggle('active', mode === 'continuous');
-  document.getElementById('modeSmart').classList.toggle('active', mode === 'smart');
-  
-  // Update mode description
-  const descriptions = {
-    'precision': '⏱️ <strong>Precision:</strong> Spray each cell for a fixed duration with delays',
-    'continuous': '🌊 <strong>Continuous:</strong> Continuous spray while traversing cells',
-    'smart': '🧠 <strong>Smart:</strong> BFS clustering - continuous spray for cell clusters ≥3, precision for isolated cells'
-  };
-  document.getElementById('modeDescription').innerHTML = descriptions[mode];
-  
-  playSound('click');
-  log(`Spray mode set to: ${mode.toUpperCase()}`, 'info');
-}
-
-// API Calls
-async function apiCall(endpoint, options = {}) {
-  try {
-    const response = await fetch(endpoint, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
-    });
-    
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      return await response.json();
-    }
-    return await response.text();
-  } catch (error) {
-    console.error(`API Error (${endpoint}):`, error);
-    throw error;
-  }
-}
-
-// Check ESP32 Connection
-async function checkESPConnection() {
-  try {
-    await apiCall('/esp_ping');
-    state.espConnected = true;
-    elements.espStatus.classList.remove('offline', 'warning');
-    elements.espStatus.classList.add('online');
-  } catch {
-    state.espConnected = false;
-    elements.espStatus.classList.remove('online', 'warning');
-    elements.espStatus.classList.add('offline');
-  }
-}
-
-// Ping ESP32
-async function pingESP() {
-  log('Pinging ESP32...', 'info');
-  
-  try {
-    const response = await apiCall('/esp_ping');
-    state.espConnected = true;
-    elements.espStatus.classList.remove('offline');
-    elements.espStatus.classList.add('online');
-    log('ESP32 connected successfully!', 'success');
-    showToast('📡 Connected', 'ESP32 is online', 'success');
-    playSound('success');
-  } catch (error) {
-    state.espConnected = false;
-    elements.espStatus.classList.remove('online');
-    elements.espStatus.classList.add('offline');
-    log('ESP32 connection failed: ' + error.message, 'error');
-    showToast('❌ Connection Failed', 'Could not reach ESP32', 'error');
-  }
-}
-
-// Capture and Detect
-async function captureAndDetect() {
-  log('Capturing frame and detecting unpainted areas...', 'info');
-  showToast('📸 Capturing', 'Analyzing frame...', 'info');
-  
-  // Freeze video feed during capture
-  const videoFeed = elements.videoFeed;
-  let originalSrc = null;
-  if (videoFeed) {
-    originalSrc = videoFeed.src;
-    videoFeed.style.filter = 'brightness(0.7)';
-    videoFeed.style.transition = 'filter 0.3s';
-  }
-  
-  try {
-    const response = await apiCall('/capture', { method: 'POST' });
-    
-    // Show captured frame as frozen image
-    if (response.image_base64 && videoFeed) {
-      videoFeed.src = 'data:image/jpeg;base64,' + response.image_base64;
-      videoFeed.style.filter = 'none';
-    }
-    
-    // Clear previous unpainted
-    state.unpaintedCells.clear();
-    document.querySelectorAll('.grid-cell.unpainted').forEach(cell => {
-      cell.classList.remove('unpainted');
-    });
-    
-    // Mark new unpainted cells
-    if (response.unpainted_cells && Array.isArray(response.unpainted_cells)) {
-      response.unpainted_cells.forEach(item => {
-        // Support both array format [row, col] and object format {row, col}
-        const row = Array.isArray(item) ? item[0] : item.row;
-        const col = Array.isArray(item) ? item[1] : item.col;
-        const key = `${row},${col}`;
-        state.unpaintedCells.add(key);
-        
-        const cell = document.querySelector(
-          `.grid-cell[data-row="${row}"][data-col="${col}"]`
-        );
-        if (cell) {
-          cell.classList.add('unpainted');
-        }
-      });
-    }
-    
-    updateStats();
-    log(`Detection complete. Found ${state.unpaintedCells.size} unpainted areas.`, 'success');
-    showToast('✅ Detection Complete', `Found ${state.unpaintedCells.size} unpainted areas`, 'success');
-    playSound('success');
-    
-    // Resume live feed after 3 seconds to let user see the detection result
-    setTimeout(() => {
-      if (videoFeed && originalSrc) {
-        videoFeed.src = originalSrc + '?' + Date.now(); // Cache bust
-        log('Live feed resumed', 'info');
-      }
-    }, 3000);
-    
-  } catch (error) {
-    log('Detection failed: ' + error.message, 'error');
-    showToast('❌ Detection Failed', error.message, 'error');
-    // Restore video on error
-    if (videoFeed && originalSrc) {
-      videoFeed.src = originalSrc + '?' + Date.now();
-      videoFeed.style.filter = 'none';
-    }
-  }
-}
-
-// Select all unpainted cells
 function selectAllUnpainted() {
   state.unpaintedCells.forEach(key => {
     state.selectedCells.add(key);
@@ -2050,7 +2212,6 @@ function selectAllUnpainted() {
   log(`Selected ${state.unpaintedCells.size} unpainted cells.`, 'info');
 }
 
-// Clear selection
 function clearSelection() {
   state.selectedCells.clear();
   document.querySelectorAll('.grid-cell.selected').forEach(cell => {
@@ -2062,47 +2223,129 @@ function clearSelection() {
   log('Selection cleared.', 'info');
 }
 
-// Start continuous spray
+function updateStats() {
+  const total = CONFIG.GRID_ROWS * CONFIG.GRID_COLS;
+  const unpainted = state.unpaintedCells.size;
+  const selected = state.selectedCells.size;
+  const sprayed = state.sprayedCount;
+  
+  if (elements.statUnpainted) elements.statUnpainted.textContent = unpainted;
+  if (elements.statSelected) elements.statSelected.textContent = selected;
+  if (elements.statSprayed) elements.statSprayed.textContent = sprayed;
+  
+  // Update progress
+  const progress = total > 0 ? Math.round((sprayed / total) * 100) : 0;
+  if (elements.progressFill) elements.progressFill.style.width = progress + '%';
+  if (elements.progressValue) elements.progressValue.textContent = progress + '%';
+  
+  // Update grid info
+  if (elements.gridInfo) {
+    elements.gridInfo.textContent = `Grid: ${CONFIG.GRID_ROWS}×${CONFIG.GRID_COLS} • Selected: ${selected}`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SPRAY MODE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function setSprayMode(mode) {
+  state.sprayMode = mode;
+  
+  const modePrecision = document.getElementById('modePrecision');
+  const modeContinuous = document.getElementById('modeContinuous');
+  const modeSmart = document.getElementById('modeSmart');
+  
+  if (modePrecision) modePrecision.classList.toggle('active', mode === 'precision');
+  if (modeContinuous) modeContinuous.classList.toggle('active', mode === 'continuous');
+  if (modeSmart) modeSmart.classList.toggle('active', mode === 'smart');
+  
+  const descriptions = {
+    'precision': '⏱️ <strong>Precision:</strong> Spray each cell for a fixed duration with delays',
+    'continuous': '🌊 <strong>Continuous:</strong> Continuous spray while traversing cells',
+    'smart': '🧠 <strong>Smart:</strong> BFS clustering - continuous spray for cell clusters ≥3, precision for isolated cells'
+  };
+  
+  const modeDescription = document.getElementById('modeDescription');
+  if (modeDescription) modeDescription.innerHTML = descriptions[mode];
+  
+  playSound('click');
+  log(`Spray mode set to: ${mode.toUpperCase()}`, 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SPRAY CONTROLS (IMPROVED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 async function startSpray() {
   if (state.isSprayActive) return;
   
+  // Check connection first
+  if (!state.espConnected) {
+    showToast('⚠️ No Connection', 'ESP32 not connected. Attempting reconnect...', 'warning');
+    const reconnected = await waitForESPReconnect(3000);
+    if (!reconnected) {
+      showToast('❌ Connection Failed', 'Cannot start spray without ESP32 connection', 'error');
+      return;
+    }
+  }
+  
   state.isSprayActive = true;
-  elements.sprayStatus.classList.remove('offline');
-  elements.sprayStatus.classList.add('online');
+  if (elements.sprayStatus) {
+    elements.sprayStatus.classList.remove('offline');
+    elements.sprayStatus.classList.add('online');
+  }
   
   log('Starting continuous spray...', 'spray');
   showToast('💨 Spray Started', 'Continuous spray active', 'info');
   
   try {
     await apiCall('/spray_start', { method: 'POST' });
-    document.getElementById('spraySequenceBtn').classList.add('spray-active');
+    const sprayBtn = document.getElementById('spraySequenceBtn');
+    if (sprayBtn) sprayBtn.classList.add('spray-active');
   } catch (error) {
     log('Failed to start spray: ' + error.message, 'error');
     showToast('❌ Spray Error', error.message, 'error');
     state.isSprayActive = false;
-    elements.sprayStatus.classList.remove('online');
-    elements.sprayStatus.classList.add('offline');
+    if (elements.sprayStatus) {
+      elements.sprayStatus.classList.remove('online');
+      elements.sprayStatus.classList.add('offline');
+    }
   }
 }
 
-// Stop spray
 async function stopSpray() {
   state.isSprayActive = false;
-  elements.sprayStatus.classList.remove('online');
-  elements.sprayStatus.classList.add('offline');
-  document.getElementById('spraySequenceBtn').classList.remove('spray-active');
+  state.spraySequenceAborted = true;
+  
+  if (elements.sprayStatus) {
+    elements.sprayStatus.classList.remove('online');
+    elements.sprayStatus.classList.add('offline');
+  }
+  
+  const sprayBtn = document.getElementById('spraySequenceBtn');
+  if (sprayBtn) sprayBtn.classList.remove('spray-active');
   
   log('Stopping spray...', 'warning');
+  
+  // Close any active SSE connection
+  if (state.currentEventSource) {
+    state.currentEventSource.close();
+    state.currentEventSource = null;
+  }
   
   try {
     await apiCall('/spray_stop', { method: 'POST' });
     showToast('⏹️ Spray Stopped', 'Spray system deactivated', 'warning');
   } catch (error) {
     log('Failed to stop spray: ' + error.message, 'error');
+    // Still try to stop locally
   }
 }
 
-// Start spray sequence on selected cells
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SPRAY SEQUENCE (SIGNIFICANTLY IMPROVED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 async function startSpraySequence() {
   if (state.selectedCells.size === 0) {
     showToast('⚠️ No Selection', 'Please select cells to spray', 'warning');
@@ -2115,10 +2358,28 @@ async function startSpraySequence() {
     return;
   }
   
+  // Check connection before starting
+  if (!state.espConnected) {
+    showToast('⚠️ Checking Connection', 'Verifying ESP32 connection...', 'info');
+    const reconnected = await waitForESPReconnect(5000);
+    if (!reconnected) {
+      showToast('❌ No Connection', 'Cannot start spray without ESP32', 'error');
+      return;
+    }
+  }
+  
+  // Reset state
   state.isSpraying = true;
-  document.getElementById('spraySequenceBtn').classList.add('spray-active');
-  elements.sprayStatus.classList.remove('offline');
-  elements.sprayStatus.classList.add('online');
+  state.spraySequenceAborted = false;
+  state.failedCells = [];
+  
+  const sprayBtn = document.getElementById('spraySequenceBtn');
+  if (sprayBtn) sprayBtn.classList.add('spray-active');
+  
+  if (elements.sprayStatus) {
+    elements.sprayStatus.classList.remove('offline');
+    elements.sprayStatus.classList.add('online');
+  }
   
   const cells = Array.from(state.selectedCells).map(key => {
     const [row, col] = key.split(',').map(Number);
@@ -2129,78 +2390,184 @@ async function startSpraySequence() {
   showToast('🚀 Sequence Started', `Spraying ${cells.length} cells in ${state.sprayMode} mode`, 'info');
   
   try {
-    // Use different endpoints based on mode
     const endpoint = state.sprayMode === 'smart' ? '/smart_spray_sequence' : '/spray_sequence';
     const cellsJson = encodeURIComponent(JSON.stringify(cells));
     
-    // Use SSE (Server-Sent Events) for real-time progress
+    // Close any existing SSE connection
+    if (state.currentEventSource) {
+      state.currentEventSource.close();
+    }
+    
+    // Create new SSE connection
     const evtSource = new EventSource(`${endpoint}?cells=${cellsJson}`);
+    state.currentEventSource = evtSource;
     
     evtSource.onmessage = function(event) {
-      const data = JSON.parse(event.data);
-      
-      if (data.event === 'moving') {
-        log(`Moving to cell (${data.row}, ${data.col}) - ${data.cell}/${data.total}`, 'info');
-        // Highlight current cell
-        highlightCell(data.row, data.col, 'moving');
-      } else if (data.event === 'spraying') {
-        log(`💨 Spraying cell (${data.row}, ${data.col})`, 'spray');
-        highlightCell(data.row, data.col, 'spraying');
-      } else if (data.event === 'done') {
-        // Mark cell as sprayed
-        const key = `${data.row},${data.col}`;
-        state.sprayedCells.add(key);
-        state.selectedCells.delete(key);
-        state.sprayedCount++;
-        
-        const cell = document.querySelector(
-          `.grid-cell[data-row="${data.row}"][data-col="${data.col}"]`
-        );
-        if (cell) {
-          cell.classList.add('sprayed');
-          cell.classList.remove('selected', 'unpainted', 'moving', 'spraying');
-        }
-        updateStats();
-        
-        log(`✓ Cell (${data.row}, ${data.col}) sprayed`, 'success');
-      } else if (data.event === 'complete') {
+      if (state.spraySequenceAborted) {
         evtSource.close();
-        log(`🎉 Spray sequence completed! Sprayed ${data.total} cells.`, 'success');
-        showToast('✅ Sequence Complete', `Successfully sprayed ${data.total} cells`, 'success');
-        playSound('success');
-        
-        state.isSpraying = false;
-        document.getElementById('spraySequenceBtn').classList.remove('spray-active');
-        elements.sprayStatus.classList.remove('online');
-        elements.sprayStatus.classList.add('offline');
-      } else if (data.event === 'cluster_start') {
-        log(`🔗 Starting cluster spray: ${data.cluster_size} connected cells`, 'info');
-      } else if (data.event === 'cluster_end') {
-        log(`✓ Cluster complete`, 'success');
+        return;
+      }
+      
+      try {
+        const data = JSON.parse(event.data);
+        handleSprayEvent(data, evtSource);
+      } catch (e) {
+        console.error('Error parsing SSE data:', e);
       }
     };
     
     evtSource.onerror = function(err) {
-      evtSource.close();
-      log('Spray sequence error or completed', 'warning');
-      state.isSpraying = false;
-      document.getElementById('spraySequenceBtn').classList.remove('spray-active');
-      elements.sprayStatus.classList.remove('online');
-      elements.sprayStatus.classList.add('offline');
+      if (state.spraySequenceAborted) {
+        evtSource.close();
+        return;
+      }
+      
+      log('SSE connection error. Checking if sequence completed...', 'warning');
+      
+      // Check if this was a normal close (sequence complete)
+      if (evtSource.readyState === EventSource.CLOSED) {
+        handleSequenceEnd(evtSource);
+      } else {
+        // Connection error - try to recover
+        log('SSE connection lost. Sequence may be incomplete.', 'error');
+        showToast('⚠️ Connection Issue', 'Spray sequence may need to be restarted', 'warning');
+        handleSequenceEnd(evtSource);
+      }
     };
     
   } catch (error) {
     log('Spray sequence failed: ' + error.message, 'error');
     showToast('❌ Sequence Failed', error.message, 'error');
-    state.isSpraying = false;
-    document.getElementById('spraySequenceBtn').classList.remove('spray-active');
-    elements.sprayStatus.classList.remove('online');
-    elements.sprayStatus.classList.add('offline');
+    handleSequenceEnd(null);
   }
 }
 
-// Helper to highlight cells during spray
-function highlightCell(row, col, state) {
+function handleSprayEvent(data, evtSource) {
+  switch (data.event) {
+    case 'connecting':
+      log('Connecting to ESP32...', 'info');
+      break;
+      
+    case 'reconnecting':
+      log(`Reconnecting to ESP32 at cell (${data.row}, ${data.col})...`, 'warning');
+      showToast('🔄 Reconnecting', 'Lost connection, attempting recovery...', 'warning');
+      break;
+      
+    case 'connection_lost':
+      log(`Connection lost at cell (${data.row}, ${data.col})`, 'error');
+      state.failedCells.push([data.row, data.col]);
+      break;
+      
+    case 'heartbeat':
+      // Connection is alive, update progress silently
+      break;
+      
+    case 'moving':
+      log(`Moving to cell (${data.row}, ${data.col}) - ${data.cell}/${data.total}`, 'info');
+      highlightCell(data.row, data.col, 'moving');
+      break;
+      
+    case 'spraying':
+      log(`💨 Spraying cell (${data.row}, ${data.col})`, 'spray');
+      highlightCell(data.row, data.col, 'spraying');
+      break;
+      
+    case 'spray_failed':
+      log(`❌ Spray failed at (${data.row}, ${data.col}): ${data.error}`, 'error');
+      state.failedCells.push([data.row, data.col]);
+      showToast('⚠️ Spray Failed', `Cell (${data.row}, ${data.col}) failed`, 'warning');
+      break;
+      
+    case 'done':
+      // Mark cell as sprayed
+      const key = `${data.row},${data.col}`;
+      state.sprayedCells.add(key);
+      state.selectedCells.delete(key);
+      state.sprayedCount++;
+      
+      const cell = document.querySelector(
+        `.grid-cell[data-row="${data.row}"][data-col="${data.col}"]`
+      );
+      if (cell) {
+        cell.classList.add('sprayed');
+        cell.classList.remove('selected', 'unpainted', 'moving', 'spraying');
+      }
+      updateStats();
+      
+      log(`✓ Cell (${data.row}, ${data.col}) sprayed`, 'success');
+      break;
+      
+    case 'segment_start':
+      log(`Starting ${data.type} segment: row ${data.row}, cols ${data.startCol}-${data.endCol}`, 'info');
+      break;
+      
+    case 'continuous_spray_start':
+      log(`🌊 Continuous spray started: row ${data.row}`, 'spray');
+      break;
+      
+    case 'continuous_spray_stop':
+      log(`✓ Continuous spray stopped: ${data.cells_count} cells done`, 'success');
+      break;
+      
+    case 'cluster_start':
+      log(`🔗 Starting cluster spray: ${data.cluster_size} connected cells`, 'info');
+      break;
+      
+    case 'cluster_end':
+      log(`✓ Cluster complete`, 'success');
+      break;
+      
+    case 'complete':
+      if (evtSource) evtSource.close();
+      
+      const successful = data.successful || (data.total - state.failedCells.length);
+      const failed = data.failed || state.failedCells.length;
+      
+      log(`🎉 Spray sequence completed! Sprayed ${successful}/${data.total} cells.`, 'success');
+      
+      if (failed > 0) {
+        showToast('⚠️ Sequence Complete', `${successful} sprayed, ${failed} failed`, 'warning');
+        log(`Failed cells: ${state.failedCells.map(c => `(${c[0]},${c[1]})`).join(', ')}`, 'warning');
+      } else {
+        showToast('✅ Sequence Complete', `Successfully sprayed ${data.total} cells`, 'success');
+      }
+      
+      playSound('success');
+      handleSequenceEnd(evtSource);
+      break;
+      
+    case 'error':
+      log(`Error: ${data.message}`, 'error');
+      showToast('❌ Error', data.message, 'error');
+      if (evtSource) evtSource.close();
+      handleSequenceEnd(evtSource);
+      break;
+  }
+}
+
+function handleSequenceEnd(evtSource) {
+  if (evtSource) {
+    evtSource.close();
+  }
+  
+  state.isSpraying = false;
+  state.currentEventSource = null;
+  
+  const sprayBtn = document.getElementById('spraySequenceBtn');
+  if (sprayBtn) sprayBtn.classList.remove('spray-active');
+  
+  if (elements.sprayStatus) {
+    elements.sprayStatus.classList.remove('online');
+    elements.sprayStatus.classList.add('offline');
+  }
+  
+  // Clear any remaining highlight states
+  document.querySelectorAll('.grid-cell.moving, .grid-cell.spraying').forEach(c => {
+    c.classList.remove('moving', 'spraying');
+  });
+}
+
+function highlightCell(row, col, highlightState) {
   // Remove previous highlight
   document.querySelectorAll('.grid-cell.moving, .grid-cell.spraying').forEach(c => {
     c.classList.remove('moving', 'spraying');
@@ -2210,18 +2577,23 @@ function highlightCell(row, col, state) {
     `.grid-cell[data-row="${row}"][data-col="${col}"]`
   );
   if (cell) {
-    cell.classList.add(state);
+    cell.classList.add(highlightState);
   }
 }
 
-// Emergency Stop
+// ═══════════════════════════════════════════════════════════════════════════════
+//  EMERGENCY STOP (IMPROVED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function openEmergencyModal() {
-  document.getElementById('emergencyModal').classList.add('active');
+  const modal = document.getElementById('emergencyModal');
+  if (modal) modal.classList.add('active');
   playSound('click');
 }
 
 function closeEmergencyModal() {
-  document.getElementById('emergencyModal').classList.remove('active');
+  const modal = document.getElementById('emergencyModal');
+  if (modal) modal.classList.remove('active');
 }
 
 async function confirmEmergencyStop() {
@@ -2230,23 +2602,48 @@ async function confirmEmergencyStop() {
   log('⚠️ EMERGENCY STOP ACTIVATED', 'error');
   showToast('🛑 EMERGENCY STOP', 'All operations halted', 'error');
   
+  // Set abort flag
+  state.spraySequenceAborted = true;
   state.isSprayActive = false;
   state.isSpraying = false;
   
-  elements.sprayStatus.classList.remove('online');
-  elements.sprayStatus.classList.add('offline');
-  document.getElementById('spraySequenceBtn').classList.remove('spray-active');
-  
-  try {
-    await apiCall('/spray_stop', { method: 'POST' });
-  } catch (error) {
-    console.error('Emergency stop error:', error);
+  // Close SSE connection
+  if (state.currentEventSource) {
+    state.currentEventSource.close();
+    state.currentEventSource = null;
   }
+  
+  // Update UI
+  if (elements.sprayStatus) {
+    elements.sprayStatus.classList.remove('online');
+    elements.sprayStatus.classList.add('offline');
+  }
+  
+  const sprayBtn = document.getElementById('spraySequenceBtn');
+  if (sprayBtn) sprayBtn.classList.remove('spray-active');
+  
+  // Send stop command multiple times to ensure it's received
+  for (let i = 0; i < 3; i++) {
+    try {
+      await apiCall('/spray_stop', { method: 'POST' }, 1);
+      break;
+    } catch (error) {
+      console.error('Emergency stop attempt', i + 1, 'failed');
+    }
+  }
+  
+  // Clear cell highlights
+  document.querySelectorAll('.grid-cell.moving, .grid-cell.spraying').forEach(c => {
+    c.classList.remove('moving', 'spraying');
+  });
   
   clearSelection();
 }
 
-// Logging
+// ═══════════════════════════════════════════════════════════════════════════════
+//  LOGGING & NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function log(message, type = 'info') {
   const time = new Date().toLocaleTimeString('en-US', { hour12: false });
   const entry = document.createElement('div');
@@ -2257,22 +2654,30 @@ function log(message, type = 'info') {
     <span class="log-message">${message}</span>
   `;
   
-  elements.logContainer.insertBefore(entry, elements.logContainer.firstChild);
-  
-  // Limit log entries
-  while (elements.logContainer.children.length > 100) {
-    elements.logContainer.removeChild(elements.logContainer.lastChild);
+  if (elements.logContainer) {
+    elements.logContainer.insertBefore(entry, elements.logContainer.firstChild);
+    
+    // Limit log entries
+    while (elements.logContainer.children.length > 100) {
+      elements.logContainer.removeChild(elements.logContainer.lastChild);
+    }
   }
+  
+  // Also log to console for debugging
+  console.log(`[${type.toUpperCase()}] ${message}`);
 }
 
 function clearLog() {
-  elements.logContainer.innerHTML = '';
-  log('Log cleared.', 'info');
+  if (elements.logContainer) {
+    elements.logContainer.innerHTML = '';
+    log('Log cleared.', 'info');
+  }
   playSound('click');
 }
 
-// Toast notifications
 function showToast(title, message, type = 'info') {
+  if (!elements.toastContainer) return;
+  
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   
@@ -2299,12 +2704,26 @@ function showToast(title, message, type = 'info') {
   }, 4000);
 }
 
-// Sound feedback
+// ═══════════════════════════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function startTimestampUpdate() {
+  setInterval(() => {
+    const now = new Date();
+    if (elements.timestamp) {
+      elements.timestamp.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+    }
+  }, 1000);
+}
+
 function toggleSound() {
   state.soundEnabled = !state.soundEnabled;
   const toggle = document.getElementById('soundToggle');
-  toggle.textContent = state.soundEnabled ? '🔊' : '🔇';
-  toggle.classList.toggle('active', state.soundEnabled);
+  if (toggle) {
+    toggle.textContent = state.soundEnabled ? '🔊' : '🔇';
+    toggle.classList.toggle('active', state.soundEnabled);
+  }
   
   showToast(
     state.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off',
@@ -2328,7 +2747,10 @@ function playSound(type) {
   }
 }
 
-// Keyboard shortcuts
+// ═══════════════════════════════════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 document.addEventListener('keydown', (e) => {
   // Ignore if typing in input
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -2346,27 +2768,40 @@ document.addEventListener('keydown', (e) => {
       break;
     case 'Escape':
       e.preventDefault();
-      if (document.getElementById('emergencyModal').classList.contains('active')) {
+      const modal = document.getElementById('emergencyModal');
+      if (modal && modal.classList.contains('active')) {
         closeEmergencyModal();
       } else {
         openEmergencyModal();
       }
       break;
+    case 'KeyP':
+      e.preventDefault();
+      pingESP();
+      break;
+    case 'KeyC':
+      if (!e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        clearSelection();
+      }
+      break;
+    case 'KeyA':
+      if (!e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        selectAllUnpainted();
+      }
+      break;
   }
 });
 
-// Handle video feed errors
-if (elements.videoFeed) {
-  elements.videoFeed.onerror = () => {
-    log('Video feed disconnected. Retrying...', 'warning');
-    setTimeout(() => {
-      elements.videoFeed.src = '/video_feed?' + Date.now();
-    }, 2000);
-  };
-}
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CONSOLE BRANDING
+// ═══════════════════════════════════════════════════════════════════════════════
 
-console.log('%c🎨 Autonomous Painting System v3.0', 'color: #7c3aed; font-size: 16px; font-weight: bold;');
+console.log('%c🎨 Autonomous Painting System v3.1 (FIXED)', 'color: #7c3aed; font-size: 16px; font-weight: bold;');
 console.log('%cVIT Chennai — Industrial Control Panel', 'color: #a855f7; font-size: 12px;');
+console.log('%cImprovements: Robust ESP32 reconnection, Camera feed freeze, Full grid display', 'color: #10b981; font-size: 11px;');
+
 </script>
 
 </body>
